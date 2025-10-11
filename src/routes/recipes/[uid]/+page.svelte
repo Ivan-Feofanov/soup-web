@@ -41,10 +41,17 @@
 		<section>
 			<Divider text="Ingredients" />
 			<ul class="mt-2 space-y-2">
-				{#each data.recipe?.ingredients as ingredient (ingredient.id)}
-					<li class="gap-2">
-						<span class="font-medium">{ingredient.name}</span> —
-						<span class=" text-stone-200">{ingredient.quantity} {ingredient.unit}</span>
+				{#each data.recipe?.ingredients as ingredient (ingredient.uid)}
+					<li class="grid grid-cols-1 gap-2">
+						<div class="flex items-center gap-2 text-lg">
+							<span class="font-medium">{ingredient.name}</span>
+							{#if ingredient.quantity && ingredient.unit}
+								<span class=" text-stone-200"> — {ingredient.quantity} {ingredient.unit}</span>
+							{/if}
+						</div>
+						{#if ingredient.notes}
+							<div class="-mt-2 text-xs text-stone-400">{ingredient.notes}</div>
+						{/if}
 					</li>
 				{/each}
 			</ul>
@@ -55,7 +62,7 @@
 			<ul class="mt-2 list-inside list-decimal space-y-2 marker:text-stone-200">
 				{#each data.recipe?.instructions as instruction (instruction.id)}
 					<li class="gap-2">
-						<span class="text-sm text-stone-200">{instruction.content}</span>
+						<span class=" text-stone-200">{instruction.content}</span>
 					</li>
 				{/each}
 			</ul>
@@ -63,7 +70,7 @@
 
 		{#if data.recipe?.author}
 			<footer class="text-sm text-stone-500">
-				<span>Author: {data.recipe.author}</span>
+				<span>Author: {data.recipe.author.email}</span>
 			</footer>
 		{/if}
 	</article>

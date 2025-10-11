@@ -10,7 +10,7 @@
 <section class="mx-auto max-w-5xl space-y-10">
 	<div class="grid grid-cols-1 gap-4">
 		{#each recentRecipes as r (r.id)}
-			<a href={resolve(`/recipes/${r.id}`)}>
+			<a href={resolve(`/recipes/${r.uid}`)}>
 				<article
 					class="flex flex-col rounded-xl border border-stone-200/60 bg-white/60 p-4 backdrop-blur dark:border-stone-700/60 dark:bg-stone-900/40"
 				>

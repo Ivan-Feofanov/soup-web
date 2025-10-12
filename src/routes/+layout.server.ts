@@ -13,7 +13,7 @@ export const load: LayoutServerLoad = async ({
 		return { user: null, allRecipes: [], authURL };
 	}
 	try {
-		const userResponse = await serverApi('GET', `/api/auth/me/`, cookies);
+		const userResponse = await serverApi('GET', `/api/users/me/`, cookies);
 		if (!userResponse.ok) {
 			return { user: null, allRecipes: [], authURL: null };
 		}
@@ -41,12 +41,14 @@ export const load: LayoutServerLoad = async ({
 							id: index,
 							content: instruction
 						})),
-						author: {
-							uid: recipe.author?.uid,
-							email: recipe.author?.email,
-							firstName: recipe.author?.first_name,
-							lastName: recipe.author?.last_name
-						}
+						author: recipe.author
+							? {
+								uid: recipe.author.uid,
+								email: recipe.author.email,
+								firstName: recipe.author.first_name,
+								lastName: recipe.author.last_name
+							}
+							: undefined
 					}) as Recipe
 			)
 		};
@@ -59,3 +61,5 @@ export const load: LayoutServerLoad = async ({
 		};
 	}
 };
+
+

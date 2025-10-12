@@ -10,10 +10,11 @@ export type Ingredient = {
 	name: string;
 	quantity: number;
 	unit: string;
+	notes?: string;
 };
 
 export type Instruction = {
-	id: string;
+	id: number;
 	content: string;
 	timer?: number; // in minutes
 };
@@ -36,7 +37,7 @@ export type Recipe = {
 	uid: string;
 	title: string;
 	description: string;
-	createdAt: Date; // ISO date string
+	createdAt: Date;
 	author?: User;
 	tags?: string[];
 	comments?: Comment[];

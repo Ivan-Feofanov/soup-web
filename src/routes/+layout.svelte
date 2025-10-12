@@ -1,8 +1,11 @@
 <script lang="ts">
-	import { auth, userStore } from '$lib/stores/auth';
 	import '../app.css';
+	import { auth, userStore } from '$lib/stores/auth';
+	import { SquareUserRound, LogIn, LogOut } from '@lucide/svelte'
+	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
+
 	let { children, data } = $props();
-	const currentUser = data.user;
 	$effect(() => {
 		if (data.user) {
 			auth.login(data.user); // no client token needed
@@ -21,7 +24,6 @@
 				<label for="nav-drawer" aria-label="open sidebar" class="btn btn-square btn-ghost">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
-						fill="none"
 						viewBox="0 0 24 24"
 						class="inline-block h-6 w-6 stroke-current"
 					>
@@ -35,20 +37,22 @@
 				</label>
 			</div>
 			<div class="mx-2 flex-1 px-2 text-center">
-				My Father's Soup
-				{#if userStore}
-					{$userStore?.email}
-				{/if}
+				<a href="{resolve('/')}">My Father's Soup</a>
 			</div>
+			{#if $userStore}
+				{#if page.url.pathname === '/chef'}
+					<form method="POST" action="/chef?/logout">
+						<button type="submit"><LogOut /></button>
+					</form>
+				{:else }
+					<a href="{resolve('/chef')}"><SquareUserRound class="h-7 w-7" /></a>
+				{/if}
+			{:else}
+				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+				<a href={data.authURL}><LogIn /></a>
+			{/if}
 		</div>
 		<main class="px-4 py-3">
-			{#if !currentUser}
-				<div class="flex flex-col items-center justify-center">
-					<h1 class="text-2xl font-bold">Welcome!</h1>
-					<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-					<a href={data.authURL} class="mt-2 text-gray-500">Please log in to continue.</a>
-				</div>
-			{/if}
 			{@render children()}
 		</main>
 	</div>

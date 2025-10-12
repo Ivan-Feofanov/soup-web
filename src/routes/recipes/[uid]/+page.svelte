@@ -1,9 +1,11 @@
 <script lang="ts">
-	import type { PageData } from './$types';
+	import type { PageProps } from './$types';
 	import { resolve } from '$app/paths';
 	import { CircleChevronLeft } from '@lucide/svelte';
 	import Divider from '$lib/components/Divider.svelte';
-	export let data: PageData;
+	import { page } from '$app/state';
+	let { data }: PageProps = $props();
+	let recipe = $derived(data.allRecipes.find((r) => r.uid === page.params.uid));
 </script>
 
 <section class="mx-auto max-w-5xl space-y-6">
@@ -20,14 +22,14 @@
 		<header class="space-y-3">
 			<!-- Back link -->
 			<h1 class="text-3xl font-extrabold tracking-tight md:text-4xl">
-				{data.recipe?.title}
+				{recipe?.title}
 			</h1>
 			<p class="text-base text-stone-600 dark:text-stone-300">
-				{data.recipe?.description}
+				{recipe?.description}
 			</p>
-			{#if data.recipe?.tags?.length}
+			{#if recipe?.tags?.length}
 				<ul class="flex flex-wrap gap-2">
-					{#each data.recipe.tags as tag (tag)}
+					{#each recipe.tags as tag (tag)}
 						<li
 							class="rounded bg-stone-100 px-2 py-1 text-[10px] tracking-wide text-stone-700 uppercase dark:bg-stone-800 dark:text-stone-300"
 						>
@@ -41,7 +43,7 @@
 		<section>
 			<Divider text="Ingredients" />
 			<ul class="mt-2 space-y-2">
-				{#each data.recipe?.ingredients as ingredient (ingredient.uid)}
+				{#each (recipe?.ingredients ?? []) as ingredient (ingredient.uid)}
 					<li class="grid grid-cols-1 gap-2">
 						<div class="flex items-center gap-2 text-lg">
 							<span class="font-medium">{ingredient.name}</span>
@@ -60,7 +62,7 @@
 		<section>
 			<Divider text="Instructions" />
 			<ul class="mt-2 list-inside list-decimal space-y-2 marker:text-stone-200">
-				{#each data.recipe?.instructions as instruction (instruction.id)}
+				{#each (recipe?.instructions ?? []) as instruction (instruction.id)}
 					<li class="gap-2">
 						<span class=" text-stone-200">{instruction.content}</span>
 					</li>
@@ -68,9 +70,9 @@
 			</ul>
 		</section>
 
-		{#if data.recipe?.author}
+		{#if recipe?.author}
 			<footer class="text-sm text-stone-500">
-				<span>Author: {data.recipe.author.email}</span>
+				<span>Author: {recipe.author.email}</span>
 			</footer>
 		{/if}
 	</article>
@@ -81,9 +83,9 @@
 	>
 		<h2 class="text-2xl font-bold tracking-tight">Comments</h2>
 
-		{#if data.recipe?.comments?.length && data.recipe?.comments?.length > 0}
+		{#if recipe?.comments?.length && recipe?.comments?.length > 0}
 			<ul class="space-y-4">
-				{#each data.recipe?.comments as comment (comment.id)}
+				{#each recipe?.comments as comment (comment.id)}
 					<li
 						class="rounded-lg border border-stone-200/60 bg-stone-50/50 p-4 dark:border-stone-700/40 dark:bg-stone-800/30"
 					>

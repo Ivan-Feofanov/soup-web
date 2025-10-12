@@ -18,17 +18,17 @@ export type Instruction = {
 	timer?: number; // in minutes
 };
 
-export type Author = {
+export type User = {
 	uid: string;
-	firstName: string;
-	lastName: string;
+	firstName?: string;
+	lastName?: string;
 	email: string;
 };
 
-export type ServerAuthor = {
+export type ServerUser = {
 	uid: string;
-	first_name: string;
-	last_name: string;
+	first_name?: string;
+	last_name?: string;
 	email: string;
 };
 
@@ -36,8 +36,8 @@ export type Recipe = {
 	uid: string;
 	title: string;
 	description: string;
-	createdAt: string; // ISO date string
-	author?: string;
+	createdAt: Date; // ISO date string
+	author?: User;
 	tags?: string[];
 	comments?: Comment[];
 	ingredients?: Ingredient[];
@@ -49,7 +49,7 @@ export type ServerRecipe = {
 	name: string;
 	description: string;
 	created_at: string; // ISO date string
-	author?: ServerAuthor;
+	author?: ServerUser;
 	tags?: string[];
 	comments?: Comment[];
 	ingredients?: Ingredient[];

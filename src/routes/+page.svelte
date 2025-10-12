@@ -9,7 +9,7 @@
 
 <section class="mx-auto max-w-5xl space-y-10">
 	<div class="grid grid-cols-1 gap-4">
-		{#each recentRecipes as r (r.id)}
+		{#each recentRecipes as r (r.uid)}
 			<a href={resolve(`/recipes/${r.uid}`)}>
 				<article
 					class="flex flex-col rounded-xl border border-stone-200/60 bg-white/60 p-4 backdrop-blur dark:border-stone-700/60 dark:bg-stone-900/40"
@@ -21,8 +21,8 @@
 						<p class="line-clamp-3 text-sm text-stone-600 dark:text-stone-300">{r.description}</p>
 					</div>
 					<footer class="mt-3 flex items-center justify-between text-xs text-stone-500">
-						<span>{r.author ?? 'Anonymous'}</span>
-						<time datetime={r.createdAt}>{new Date(r.createdAt).toLocaleDateString()}</time>
+						<span>{r.author?.email ?? 'Anonymous'}</span>
+						<time>{r.createdAt.toLocaleDateString()}</time>
 					</footer>
 					{#if r.tags?.length}
 						<ul class="mt-3 flex flex-wrap gap-2">

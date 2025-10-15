@@ -21,16 +21,9 @@ export type Instruction = {
 
 export type User = {
 	uid: string;
-	firstName?: string;
-	lastName?: string;
 	email: string;
-};
-
-export type ServerUser = {
-	uid: string;
-	first_name?: string;
-	last_name?: string;
-	email: string;
+	handler?: string;
+	username?: string;
 };
 
 export type Recipe = {
@@ -50,9 +43,14 @@ export type ServerRecipe = {
 	name: string;
 	description: string;
 	created_at: string; // ISO date string
-	author?: ServerUser;
+	author?: User;
 	tags?: string[];
 	comments?: Comment[];
 	ingredients?: Ingredient[];
 	instructions?: string[];
 };
+
+
+export type ErrorResponse = { detail: string, code: string };
+export type ValidationErrorResponse = { message: string, errors: Record<string, string[]> };
+

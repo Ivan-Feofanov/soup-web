@@ -1,1 +1,1 @@
-<p>Завершаем вход...</p>
+<p>	You have successfully logged in!</p>

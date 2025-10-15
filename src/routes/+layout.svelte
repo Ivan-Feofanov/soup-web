@@ -1,18 +1,16 @@
 <script lang="ts">
 	import '../app.css';
-	import { auth, userStore } from '$lib/stores/auth';
 	import { SquareUserRound, LogIn, LogOut } from '@lucide/svelte'
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-
+	import { goto } from '$app/navigation';
 	let { children, data } = $props();
+
 	$effect(() => {
-		if (data.user) {
-			auth.login(data.user); // no client token needed
-		} else {
-			auth.logout();
+		if (!page.url.pathname.startsWith('/chef') && data.user &&  (!data.user.handler || !data.user.username)) {
+			goto(resolve('/chef'));
 		}
-	});
+	})
 </script>
 
 <div class="drawer md:drawer-open">
@@ -39,7 +37,7 @@
 			<div class="mx-2 flex-1 px-2 text-center">
 				<a href="{resolve('/')}">My Father's Soup</a>
 			</div>
-			{#if $userStore}
+			{#if data.user}
 				{#if page.url.pathname === '/chef'}
 					<form method="POST" action="/chef?/logout">
 						<button type="submit"><LogOut /></button>

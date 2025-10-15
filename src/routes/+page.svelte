@@ -4,7 +4,7 @@
 
 	export let data: PageData;
 
-	const recentRecipes = data.allRecipes;
+	const recentRecipes = data.recipes;
 </script>
 
 <section class="mx-auto max-w-5xl space-y-10">

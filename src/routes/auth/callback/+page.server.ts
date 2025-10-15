@@ -19,9 +19,18 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 			secure: process.env.NODE_ENV === 'production', // Use HTTPS in production
 			maxAge: 60 * 60 * 24 * 7 // 7 days
 		});
+		cookies.set('access_token', response.access, {
+			path: '/',
+			httpOnly: true,
+			secure: process.env.NODE_ENV === 'production',
+			maxAge: 60 * 60 * 24
+		})
 	} catch (error) {
 		console.error('Callback error:', error);
 		throw redirect(303, '/?error=unexpected_error');
+	}
+	if (response.user && (!response.user.handler || !response.user.username)) {
+		throw redirect(303, '/chef');
 	}
 	throw redirect(303, '/');
 };

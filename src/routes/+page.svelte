@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import type { PageData } from './$types';
+	import { Button } from '$lib/components/ui/button';
 
 	export let data: PageData;
 
@@ -8,6 +9,8 @@
 </script>
 
 <section class="mx-auto max-w-5xl space-y-10">
+	<!-- new recipe button -->
+	<Button href={resolve('/recipes/new')} variant="outline">New Recipe</Button>
 	<div class="grid grid-cols-1 gap-4">
 		{#each recentRecipes as r (r.uid)}
 			<a href={resolve(`/recipes/${r.uid}`)}>

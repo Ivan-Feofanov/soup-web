@@ -1,6 +1,9 @@
 <script lang="ts">
 	import '../app.css';
-	import { SquareUserRound, LogIn, LogOut } from '@lucide/svelte'
+	import { ModeWatcher, toggleMode } from 'mode-watcher';
+	import { User, LogIn, LogOut, Sun, MoonStar } from '@lucide/svelte'
+	import { Button } from "$lib/components/ui/button/index.js";
+
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
@@ -12,54 +15,50 @@
 		}
 	})
 </script>
+<ModeWatcher defaultMode="system" />
+<!-- Navbar -->
+<nav class="sticky top-0 z-10 w-full bg-primary-foreground flex items-center justify-between border-b border-base-content/10 p-2 gap-2.5">
+	<div class="flex-none md:hidden">
+		<label for="nav-drawer" aria-label="open sidebar" class="btn btn-square btn-ghost">
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				viewBox="0 0 24 24"
+				class="inline-block h-6 w-6 stroke-current"
+			>
+				<path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					stroke-width="2"
+					d="M4 6h16M4 12h16M4 18h16"
+				></path>
+			</svg>
+		</label>
+	</div>
+	<div class="mx-2 flex-1 px-2 text-center">
+		<a href="{resolve('/')}">My Father's Soup</a>
+	</div>
+	<Button onclick={toggleMode} variant="outline" size="icon">
+		<Sun
+			class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 !transition-all dark:-rotate-90 dark:scale-0"
+		/>
+		<MoonStar
+			class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 !transition-all dark:rotate-0 dark:scale-100"
+		/>
+		<span class="sr-only">Toggle theme</span>
+	</Button>
+	{#if data.user}
+		{#if page.url.pathname === '/chef'}
+			<form method="POST" action="/chef?/logout">
+				<Button type="submit" variant="outline" size="icon"><LogOut /></Button>
+			</form>
+		{:else }
+			<Button href={resolve('/chef')} variant="outline" size="icon"><User class="h-[1.2rem] w-[1.2rem]"/></Button>
+		{/if}
+	{:else}
+		<Button href={data.authURL} variant="outline" size="icon"><LogIn class="h-[1.2rem] w-[1.2rem]"/></Button>
+	{/if}
+</nav>
 
-<div class="drawer md:drawer-open">
-	<input id="nav-drawer" type="checkbox" class="drawer-toggle" />
-	<div class="drawer-content flex flex-col">
-		<!-- Navbar -->
-		<div class="navbar sticky top-0 z-10 w-full bg-base-300">
-			<div class="flex-none md:hidden">
-				<label for="nav-drawer" aria-label="open sidebar" class="btn btn-square btn-ghost">
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						viewBox="0 0 24 24"
-						class="inline-block h-6 w-6 stroke-current"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M4 6h16M4 12h16M4 18h16"
-						></path>
-					</svg>
-				</label>
-			</div>
-			<div class="mx-2 flex-1 px-2 text-center">
-				<a href="{resolve('/')}">My Father's Soup</a>
-			</div>
-			{#if data.user}
-				{#if page.url.pathname === '/chef'}
-					<form method="POST" action="/chef?/logout">
-						<button type="submit"><LogOut /></button>
-					</form>
-				{:else }
-					<a href="{resolve('/chef')}"><SquareUserRound class="h-7 w-7" /></a>
-				{/if}
-			{:else}
-				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-				<a href={data.authURL}><LogIn /></a>
-			{/if}
-		</div>
-		<main class="px-4 py-3">
-			{@render children()}
-		</main>
-	</div>
-	<div class="drawer-side">
-		<label for="nav-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
-		<ul class="menu min-h-full w-50 bg-base-200 p-4">
-			<!-- Sidebar content here -->
-			<li>Sidebar Item 1</li>
-			<li>Sidebar Item 2</li>
-		</ul>
-	</div>
-</div>
+<main class="px-4 py-3">
+	{@render children()}
+</main>

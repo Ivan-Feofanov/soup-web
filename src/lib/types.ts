@@ -8,10 +8,20 @@ export type Comment = {
 export type Ingredient = {
 	uid: string;
 	name: string;
+}
+
+export type IngredientInRecipe = {
+	ingredient_uid: string;
+	unit_uid: string;
 	quantity: number;
-	unit: string;
 	notes?: string;
 };
+
+export type Unit = {
+	uid: string;
+	name: string;
+	abbreviation?: string;
+}
 
 export type Instruction = {
 	id: number;
@@ -36,7 +46,7 @@ export type Recipe = {
 	author?: User;
 	tags?: string[];
 	comments?: Comment[];
-	ingredients?: Ingredient[];
+	ingredients?: IngredientInRecipe[];
 	instructions?: Instruction[];
 };
 
@@ -48,7 +58,7 @@ export type ServerRecipe = {
 	author?: User;
 	tags?: string[];
 	comments?: Comment[];
-	ingredients?: Ingredient[];
+	ingredients?: IngredientInRecipe[];
 	instructions?: string[];
 };
 

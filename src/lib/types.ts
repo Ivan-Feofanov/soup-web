@@ -30,6 +30,8 @@ export type Recipe = {
 	uid: string;
 	title: string;
 	description: string;
+	notes?: string;
+	image?: string;
 	createdAt: Date;
 	author?: User;
 	tags?: string[];

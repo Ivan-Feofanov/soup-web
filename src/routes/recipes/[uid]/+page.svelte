@@ -25,6 +25,12 @@
 			<p class="text-base text-stone-600 dark:text-stone-300">
 				{data.recipe?.description}
 			</p>
+			{#if data.recipe?.notes}
+				<Divider text="Notes" />
+				<p class="text-base text-stone-600 dark:text-stone-300">
+					{data.recipe?.notes}
+				</p>
+			{/if}
 			{#if data.recipe?.tags?.length}
 				<ul class="flex flex-wrap gap-2">
 					{#each data.recipe.tags as tag (tag)}

@@ -1,12 +1,16 @@
+import { superValidate, type SuperValidated } from 'sveltekit-superforms';
+import { zod4 } from "sveltekit-superforms/adapters";
 import { serverApi } from '$lib/server/api';
 import type { Ingredient, Recipe, ServerRecipe, Unit } from '$lib/types';
 import type { PageServerLoad } from './$types';
-import { error } from '@sveltejs/kit';
+import { type Actions, error, fail, redirect } from '@sveltejs/kit';
+import { type RecipeSchema, recipeSchema } from './recipe.schema';
 
 interface PageData {
 	recipe: Recipe | null,
 	ingredients: Ingredient[],
-	units: Unit[]
+	units: Unit[],
+	form: SuperValidated<RecipeSchema>
 }
 
 export const load: PageServerLoad = async ({ cookies, params }): Promise<PageData> => {
@@ -27,7 +31,8 @@ export const load: PageServerLoad = async ({ cookies, params }): Promise<PageDat
 			return {
 				recipe: null,
 				ingredients,
-				units
+				units,
+				form: await superValidate(zod4(recipeSchema))
 			}
 		} catch (err) {
 			console.error(err);
@@ -53,10 +58,29 @@ export const load: PageServerLoad = async ({ cookies, params }): Promise<PageDat
 				})),
 			},
 			ingredients,
-			units
+			units,
+			form: await superValidate(zod4(recipeSchema))
 		};
 	} catch (err) {
 		console.error(err);
 		error(500, 'Failed to fetch recipe')
 	}
+};
+
+export const actions: Actions = {
+	default: async (event) => {
+		const form = await superValidate(event, zod4(recipeSchema));
+		if (!form.valid) {
+			console.error(form.errors)
+			return fail(400, {
+				form,
+			});
+		}
+		const response = await serverApi('POST', '/api/kitchen/recipes/', event.cookies, form.data)
+		if (!response.ok) {
+			return fail(response.status, form)
+		}
+		const responseData: ServerRecipe = await response.json();
+		redirect(303, `/recipes/${responseData.uid}`)
+	},
 };

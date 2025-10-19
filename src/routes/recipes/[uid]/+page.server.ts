@@ -1,37 +1,26 @@
 import { superValidate, type SuperValidated } from 'sveltekit-superforms';
 import { zod4 } from "sveltekit-superforms/adapters";
-import { serverApi } from '$lib/server/api';
-import type { Ingredient, Recipe, ServerRecipe, Unit } from '$lib/types';
+import type { Ingredient, Recipe, Unit } from '$lib/types';
 import type { PageServerLoad } from './$types';
 import { type Actions, error, fail, redirect } from '@sveltejs/kit';
-import { type RecipeSchema, recipeSchema } from './recipe.schema';
+import { recipeSchema, type RecipeSchema } from '$lib/schemes';
+import { KitchenAPI } from '$lib/server/kitchen';
 
 interface PageData {
-	recipe: Recipe | null,
-	ingredients: Ingredient[],
-	units: Unit[],
-	form: SuperValidated<RecipeSchema>
+	recipe: Recipe | null;
+	ingredients: Ingredient[];
+	units: Unit[];
+	form: SuperValidated<RecipeSchema>;
 }
 
 export const load: PageServerLoad = async ({ cookies, params }): Promise<PageData> => {
-	let ingredients: Ingredient[] = [];
-	let units: Unit[] = [];
+	const kitchen = new KitchenAPI(cookies, fetch);
 	if (params.uid === 'new') {
 		try {
-			const ingredientsResponse = await serverApi('GET', `/api/kitchen/ingredients/`, cookies);
-			if (!ingredientsResponse.ok) {
-				return error(ingredientsResponse.status, ingredientsResponse.statusText);
-			}
-			ingredients = await ingredientsResponse.json();
-			const unitsResponse = await serverApi('GET', `/api/kitchen/units/`, cookies);
-			if (!unitsResponse.ok) {
-				return error(unitsResponse.status, unitsResponse.statusText);
-			}
-			units = await unitsResponse.json();
 			return {
 				recipe: null,
-				ingredients,
-				units,
+				ingredients: await kitchen.GetIngredients(),
+				units: await kitchen.GetUnits(),
 				form: await superValidate(zod4(recipeSchema))
 			}
 		} catch (err) {
@@ -41,28 +30,16 @@ export const load: PageServerLoad = async ({ cookies, params }): Promise<PageDat
 	}
 
 	try {
-		const serverRecipe: ServerRecipe = await serverApi('GET', `/api/kitchen/recipes/${params.uid}`, cookies).then((res) =>
-			res.json()
-		);
-		if (!serverRecipe) {
-			return error(404, 'Recipe not found');
-		}
+		const recipe = await kitchen.GetRecipe(params.uid);
 		return {
-			recipe: {
-				...serverRecipe,
-				createdAt: new Date(serverRecipe.created_at),
-				instructions: serverRecipe.instructions?.map((instruction: string, index: number) => ({
-					id: index,
-					content: instruction
-				})),
-			},
-			ingredients,
-			units,
+			recipe,
+			ingredients: [],
+			units: [],
 			form: await superValidate(zod4(recipeSchema))
 		};
 	} catch (err) {
 		console.error(err);
-		error(500, 'Failed to fetch recipe')
+		throw redirect(303, '/');
 	}
 };
 
@@ -75,11 +52,13 @@ export const actions: Actions = {
 				form,
 			});
 		}
-		const response = await serverApi('POST', '/api/kitchen/recipes/', event.cookies, form.data)
-		if (!response.ok) {
-			return fail(response.status, form)
+		let recipeUid: string;
+		try {
+			recipeUid = await new KitchenAPI(event.cookies, event.fetch).CreateRecipe(form.data);
+		} catch (e) {
+			console.error(e)
+			return fail(500, { form })
 		}
-		const responseData: ServerRecipe = await response.json();
-		redirect(303, `/recipes/${responseData.uid}`)
+		redirect(303, `/recipes/${recipeUid}`)
 	},
 };

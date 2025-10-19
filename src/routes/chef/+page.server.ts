@@ -1,9 +1,10 @@
 import type { Actions } from './$types';
 import { fail, redirect } from '@sveltejs/kit';
-import { serverApi, ValidationError } from '$lib/server/api';
+import { ValidationError } from '$lib/server/base';
+import { UserAPI } from '$lib/server/user';
 
 export const actions = {
-	update: async ({ cookies, request }) => {
+	update: async ({ cookies, request, fetch }) => {
 		const formData = await request.formData();
 		const uid = formData.get('uid');
 		const firstTime = formData.get('firstTime');
@@ -11,7 +12,10 @@ export const actions = {
 		const username = formData.get('username');
 
 		try{
-			await serverApi('PATCH', `/api/users/${uid}`, cookies, {handler, username})
+			await new UserAPI(cookies, fetch).UpdateUser(
+				uid as string,
+				{handler, username} as {handler: string, username: string}
+			)
 		} catch (error) {
 			if (error instanceof ValidationError) {
 				return fail(400, {handler, username, errors: error.fields});

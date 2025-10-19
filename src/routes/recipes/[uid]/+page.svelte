@@ -2,12 +2,12 @@
 	import type { PageProps } from './$types';
 	import { resolve } from '$app/paths';
 	import { CircleChevronLeft } from '@lucide/svelte';
-	import EditRecipe from './EditRecipe.svelte';
+	import EditRecipe from '$lib/components/EditRecipe.svelte';
 	import RecipeDetails from '$lib/components/RecipeDetails.svelte';
 	let { data }: PageProps = $props();
 </script>
 
-<section class="mx-auto max-w-5xl">
+<section class="mx-auto max-w-5xl space-y-4">
 	<div class="flex items-center">
 		<a
 			href={resolve('/')}
@@ -16,7 +16,6 @@
 			<CircleChevronLeft />
 		</a>
 	</div>
-
 	{#if !data.recipe}
 		<EditRecipe recipe={data.recipe} ingredients={data.ingredients} units={data.units} form={data.form}/>
 	{:else}

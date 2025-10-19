@@ -40,11 +40,11 @@
 					<div class="flex items-center gap-2 text-lg">
 						<span class="font-medium">{ingredient.ingredient.name}</span>
 						{#if ingredient.quantity && ingredient.unit}
-							<span class=" text-stone-200"> — {ingredient.quantity} {ingredient.unit.abbreviation}</span>
+							<span class=" text-stone-600 dark:text-stone-200"> — {ingredient.quantity} {ingredient.unit.abbreviation}</span>
 						{/if}
 					</div>
 					{#if ingredient.notes}
-						<div class="-mt-2 text-xs text-stone-400">{ingredient.notes}</div>
+						<div class="-mt-2 text-xs dark:text-stone-400 text-stone-600">{ingredient.notes}</div>
 					{/if}
 				</li>
 			{/each}
@@ -53,10 +53,10 @@
 
 	<section>
 		<Divider text="Instructions" />
-		<ul class="mt-2 list-inside list-decimal space-y-2 marker:text-stone-200">
+		<ul class="mt-2 list-inside list-decimal space-y-2 marker:text-stone-600 dark:marker:text-stone-200">
 			{#each (recipe?.instructions ?? []) as instruction (instruction.id)}
 				<li class="gap-2">
-					<span class=" text-stone-200">{instruction.content}</span>
+					<span class=" text-stone-600 dark:text-stone-200">{instruction.content}</span>
 				</li>
 			{/each}
 		</ul>

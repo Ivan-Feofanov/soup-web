@@ -8,9 +8,13 @@
 	const recentRecipes = data.recipes;
 </script>
 
-<section class="mx-auto max-w-5xl space-y-10">
+<section class="mx-auto max-w-5xl space-y-4">
 	<!-- new recipe button -->
-	<Button href={resolve('/recipes/new')} variant="outline">New Recipe</Button>
+	{#if data.user}
+		<div class="flex justify-end">
+			<Button href={resolve('/recipes/new')} variant="outline">New Recipe</Button>
+		</div>
+	{/if}
 	<div class="grid grid-cols-1 gap-4">
 		{#each recentRecipes as r (r.uid)}
 			<a href={resolve(`/recipes/${r.uid}`)}>

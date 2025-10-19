@@ -14,8 +14,8 @@
 	import { tick } from "svelte";
 	import { cn } from "$lib/utils.js";
 	import Divider from '$lib/components/Divider.svelte';
-	import { type RecipeSchema } from './recipe.schema';
 	import { superForm, type SuperValidated } from 'sveltekit-superforms';
+	import type { RecipeSchema } from '$lib/schemes';
 
 	let { recipe, ingredients, units, form: formData }: { recipe: RecipeSchema | null, ingredients: Ingredient[], units: Unit[], form: SuperValidated<RecipeSchema> } = $props();
 	const form = superForm(formData, {
@@ -85,7 +85,22 @@
 		return unit ? unit.abbreviation || unit.name : "Unknown Unit";
 	}
 
+		$effect(() => {
+			if ($errors.ingredients && $errors.ingredients[0]) {
+				console.log($errors.ingredients);
+			}
+		})
+
+	type IngredientError = {quantity: string[]};
 </script>
+{#snippet ingredientError(err: IngredientError)}
+	{#each err.quantity as error, index (index)}
+		{#if error}
+			<div class="text-xs text-destructive">{error}</div>
+		{/if}
+	{/each}
+{/snippet}
+
 <form method="POST" use:enhance class="md:w-2/3 space-y-6">
 	<Divider text={recipe?.title ?? 'New Recipe'}/>
 
@@ -146,12 +161,6 @@
 				{/if}
 			</Form.Field>
 		{/each}
-		<!-- Array-level errors -->
-		{#if $errors.instructions}
-			<div class="text-sm text-destructive">
-				{$errors.instructions._errors}
-			</div>
-		{/if}
 		<Button onclick={() => addInstruction()} variant="outline"><Plus /></Button>
 	</Field.Group>
 	<Divider text="Ingredients" class="mt-2"/>
@@ -162,9 +171,13 @@
 			<Card.Content class="p-2">
 				<Table.Root class="w-full rounded-xl bg-background">
 					<Table.Body class="rounded-xl divide-y divide-border">
-						{#each selectedIngredients as ingredient (ingredient.ingredient_uid)}
+						{#each selectedIngredients as ingredient, index (ingredient.ingredient_uid)}
 							<Table.Row>
-								<Table.Cell class="font-medium w-2/3 pl-4">{ingredientLabel(ingredient.ingredient_uid)}</Table.Cell>
+								<Table.Cell class="font-medium w-2/3 pl-4">{ingredientLabel(ingredient.ingredient_uid)}
+									{#if $errors.ingredients && $errors.ingredients[index]}
+										{@render ingredientError($errors.ingredients[index])}
+									{/if}
+								</Table.Cell>
 								<Table.Cell>{ingredient.quantity} {unitLabel(ingredient.unit_uid)}</Table.Cell>
 								<Table.Cell class="text-right"><Button onclick={() => removeIngredient(ingredient.ingredient_uid)} variant="ghost" size="icon"><CircleX /></Button></Table.Cell>
 							</Table.Row>
@@ -244,6 +257,12 @@
 			</Field.Field>
 		</div>
 		<Button onclick={() => addIngredient()} class="mt-2">Add</Button>
+		{#if $errors.ingredients}
+			<div class="text-sm text-destructive">
+				{$errors.ingredients._errors?.join(', ')}
+			</div>
+		{/if}
+
 	</Field.Group>
 
 	<Field.Separator />

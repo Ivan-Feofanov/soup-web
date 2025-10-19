@@ -50,7 +50,6 @@ export const load: PageServerLoad = async ({ cookies, params }): Promise<PageDat
 		return {
 			recipe: {
 				...serverRecipe,
-				title: serverRecipe.name,
 				createdAt: new Date(serverRecipe.created_at),
 				instructions: serverRecipe.instructions?.map((instruction: string, index: number) => ({
 					id: index,

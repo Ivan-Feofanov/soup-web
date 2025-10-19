@@ -11,11 +11,12 @@ export type Ingredient = {
 }
 
 export type IngredientInRecipe = {
-	ingredient_uid: string;
-	unit_uid: string;
+	uid: string;
+	ingredient: Ingredient;
+	unit: Unit;
 	quantity: number;
 	notes?: string;
-};
+}
 
 export type Unit = {
 	uid: string;
@@ -52,7 +53,7 @@ export type Recipe = {
 
 export type ServerRecipe = {
 	uid: string;
-	name: string;
+	title: string;
 	description: string;
 	created_at: string; // ISO date string
 	author?: User;

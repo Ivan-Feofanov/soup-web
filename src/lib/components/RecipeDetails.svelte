@@ -1,7 +1,8 @@
 <script lang="ts">
 	import Divider from '$lib/components/Divider.svelte';
+	import type { Recipe } from '$lib/types';
 
-	const { recipe } = $props();
+	const { recipe }: {recipe: Recipe} = $props();
 </script>
 <article class="space-y-4">
 	<header class="space-y-3">
@@ -37,9 +38,9 @@
 			{#each (recipe?.ingredients ?? []) as ingredient (ingredient.uid)}
 				<li class="grid grid-cols-1 gap-2">
 					<div class="flex items-center gap-2 text-lg">
-						<span class="font-medium">{ingredient.name}</span>
+						<span class="font-medium">{ingredient.ingredient.name}</span>
 						{#if ingredient.quantity && ingredient.unit}
-							<span class=" text-stone-200"> — {ingredient.quantity} {ingredient.unit}</span>
+							<span class=" text-stone-200"> — {ingredient.quantity} {ingredient.unit.abbreviation}</span>
 						{/if}
 					</div>
 					{#if ingredient.notes}
@@ -62,7 +63,7 @@
 	</section>
 
 	{#if recipe?.author}
-		<footer class="text-sm text-stone-500">
+		<footer class="text-sm text-stone-500 dark:text-stone-400 my-4">
 			<span>Author: {recipe.author.username}</span>
 		</footer>
 	{/if}

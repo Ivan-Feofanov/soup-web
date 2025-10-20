@@ -40,10 +40,11 @@ export class BaseAPI {
 			return;
 		}
 
+		this.headers['Authorization'] = '';
+
 		const refreshToken = this.cookies.get('refresh_token');
 		if (!refreshToken) {
 			this.accessToken = null;
-			this.headers['Authorization'] = '';
 			return;
 		}
 
@@ -75,6 +76,7 @@ export class BaseAPI {
 				maxAge: 60 * 60 * 24 * 7 // 7 days
 			});
 			this.accessToken = data.access;
+			this.headers['Authorization'] = `Bearer ${data.access}`;
 		} catch (error) {
 			console.error('Token refresh error:', error);
 			return null;

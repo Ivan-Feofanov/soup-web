@@ -83,4 +83,25 @@ export class KitchenAPI extends BaseAPI {
 	DeleteRecipe = async (uid: string) => {
 		return this.DELETE(`/recipes/${uid}`);
 	};
+
+	addIngredient = async (data: Record<string, unknown>): Promise<{created: boolean, ingredient: Ingredient}> => {
+		const response = await this.POST('/ingredients/', data);
+		if (!response.ok) {
+			const errorData = await response.json();
+			console.error('Failed to add ingredient:', errorData);
+			throw new Error(`Failed to add ingredient: ${errorData}`);
+		}
+
+		return {created: response.status === 201, ingredient: await response.json()};
+	};
+
+	addUnit = async (data: Record<string, unknown>): Promise<{created: boolean, unit: Unit}> => {
+		const response = await this.POST('/units/', data);
+		if (!response.ok) {
+			const errorData = await response.json();
+			console.error('Failed to add unit:', errorData);
+			throw new Error(`Failed to add unit: ${errorData}`);
+		}
+		return {created: response.status === 201, unit: await response.json()};
+	}
 }

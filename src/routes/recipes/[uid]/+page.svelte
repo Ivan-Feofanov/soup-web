@@ -2,7 +2,7 @@
 	import type { PageProps } from './$types';
 	import { resolve } from '$app/paths';
 	import { CircleChevronLeft } from '@lucide/svelte';
-	import EditRecipe from '$lib/components/EditRecipe.svelte';
+	import EditRecipe from './EditRecipe.svelte';
 	import RecipeDetails from '$lib/components/RecipeDetails.svelte';
 	let { data }: PageProps = $props();
 </script>
@@ -17,7 +17,7 @@
 		</a>
 	</div>
 	{#if !data.recipe}
-		<EditRecipe recipe={data.recipe} ingredients={data.ingredients} units={data.units} form={data.form}/>
+		<EditRecipe data={data}/>
 	{:else}
 		<RecipeDetails recipe={data.recipe}/>
 	{/if}

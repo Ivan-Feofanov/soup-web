@@ -3,7 +3,14 @@ import { zod4 } from "sveltekit-superforms/adapters";
 import type { Ingredient, Recipe, Unit } from '$lib/types';
 import type { PageServerLoad } from './$types';
 import { type Actions, error, fail, redirect } from '@sveltejs/kit';
-import { recipeSchema, type RecipeSchema } from '$lib/schemes';
+import {
+	ingredientSchema,
+	type IngredientSchema,
+	recipeSchema,
+	type RecipeSchema,
+	unitSchema,
+	type UnitSchema
+} from '$lib/schemes';
 import { KitchenAPI } from '$lib/server/kitchen';
 
 interface PageData {
@@ -11,6 +18,8 @@ interface PageData {
 	ingredients: Ingredient[];
 	units: Unit[];
 	form: SuperValidated<RecipeSchema>;
+	ingredientAddForm: SuperValidated<IngredientSchema>;
+	unitAddForm: SuperValidated<UnitSchema>;
 }
 
 export const load: PageServerLoad = async ({ cookies, params }): Promise<PageData> => {
@@ -21,7 +30,9 @@ export const load: PageServerLoad = async ({ cookies, params }): Promise<PageDat
 				recipe: null,
 				ingredients: await kitchen.GetIngredients(),
 				units: await kitchen.GetUnits(),
-				form: await superValidate(zod4(recipeSchema))
+				form: await superValidate(zod4(recipeSchema)),
+				ingredientAddForm: await superValidate(zod4(ingredientSchema)),
+				unitAddForm: await superValidate(zod4(unitSchema))
 			}
 		} catch (err) {
 			console.error(err);
@@ -35,7 +46,9 @@ export const load: PageServerLoad = async ({ cookies, params }): Promise<PageDat
 			recipe,
 			ingredients: [],
 			units: [],
-			form: await superValidate(zod4(recipeSchema))
+			form: await superValidate(zod4(recipeSchema)),
+			ingredientAddForm: await superValidate(zod4(ingredientSchema)),
+			unitAddForm: await superValidate(zod4(unitSchema))
 		};
 	} catch (err) {
 		console.error(err);
@@ -44,7 +57,7 @@ export const load: PageServerLoad = async ({ cookies, params }): Promise<PageDat
 };
 
 export const actions: Actions = {
-	default: async (event) => {
+	saveRecipe: async (event) => {
 		const form = await superValidate(event, zod4(recipeSchema));
 		if (!form.valid) {
 			console.error(form.errors)
@@ -54,11 +67,36 @@ export const actions: Actions = {
 		}
 		let recipeUid: string;
 		try {
-			recipeUid = await new KitchenAPI(event.cookies, event.fetch).CreateRecipe(form.data);
+			const kitchenAPI = new KitchenAPI(event.cookies, event.fetch)
+			recipeUid = await kitchenAPI.CreateRecipe(form.data);
 		} catch (e) {
 			console.error(e)
 			return fail(500, { form })
 		}
 		redirect(303, `/recipes/${recipeUid}`)
 	},
+	addIngredient: async (event) => {
+		const form = await superValidate(event, zod4(ingredientSchema));
+		if (!form.valid) {
+			console.error(form.errors)
+			return fail(400, {
+				form,
+			});
+		}
+		const kitchenAPI = new KitchenAPI(event.cookies, event.fetch)
+		const { created, ingredient } = await kitchenAPI.addIngredient(form.data)
+		return {success: true, form, ingredient, created}
+	},
+	addUnit: async (event) => {
+		const form = await superValidate(event, zod4(unitSchema));
+		if (!form.valid) {
+			console.error(form.errors)
+			return fail(400, {
+				form,
+			});
+		}
+		const kitchenAPI = new KitchenAPI(event.cookies, event.fetch)
+		const { created, unit } = await kitchenAPI.addUnit(form.data)
+		return {success: true, form, unit, created}
+	}
 };

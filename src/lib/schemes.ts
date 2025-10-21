@@ -22,3 +22,12 @@ export const recipeSchema = z.object({
 	image: z.string().optional()
 });
 export type RecipeSchema = z.infer<typeof recipeSchema>;
+
+export const ingredientSchema = z.object({ name: z.string().min(1, 'Name is required') });
+export type IngredientSchema = z.infer<typeof ingredientSchema>;
+
+export const unitSchema = z.object({
+	name: z.string().min(1, 'Name is required'),
+	abbreviation: z.string().min(1, 'Abbreviation is required')
+});
+export type UnitSchema = z.infer<typeof unitSchema>;

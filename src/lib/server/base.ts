@@ -21,7 +21,6 @@ export class BaseAPI {
 	baseUrl: string = `${DJANGO_API_URL}/api`;
 	serverUrl: string = DJANGO_API_URL;
 	fetch: Fetch;
-	private accessToken: string | null = null;
 	private readonly cookies: Cookies;
 	private headers: Record<string, string> = {
 		'Content-Type': 'application/json'
@@ -35,7 +34,6 @@ export class BaseAPI {
 	private async ensureAccessToken() {
 		const accessToken = this.cookies.get('access_token');
 		if (accessToken) {
-			this.accessToken = accessToken;
 			this.headers['Authorization'] = `Bearer ${accessToken}`;
 			return;
 		}
@@ -44,7 +42,6 @@ export class BaseAPI {
 
 		const refreshToken = this.cookies.get('refresh_token');
 		if (!refreshToken) {
-			this.accessToken = null;
 			return;
 		}
 
@@ -75,7 +72,6 @@ export class BaseAPI {
 				secure: process.env.NODE_ENV === 'production', // Use HTTPS in production
 				maxAge: 60 * 60 * 24 * 7 // 7 days
 			});
-			this.accessToken = data.access;
 			this.headers['Authorization'] = `Bearer ${data.access}`;
 		} catch (error) {
 			console.error('Token refresh error:', error);
@@ -88,7 +84,7 @@ export class BaseAPI {
 	}
 
 	protected isAuthenticated() {
-		return this.accessToken !== null;
+		return !!this.cookies.get('access_token') && !!this.cookies.get('refresh_token');
 	}
 
 	protected async ensureAuth() {

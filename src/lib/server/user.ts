@@ -8,7 +8,11 @@ export class UserAPI extends BaseAPI {
 		this.baseUrl = `${this.serverUrl}/api/users`;
 	}
 
-	GetMe = async (): Promise<User> => {
+	GetMe = async (): Promise<User | null> => {
+		if (!this.isAuthenticated()) {
+			return null;
+		}
+
 		const response = await this.GET('/me');
 		if (!response.ok) {
 			const errorData = await response.json();

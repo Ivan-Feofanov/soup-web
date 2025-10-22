@@ -28,7 +28,7 @@
 						<p class="line-clamp-3 text-sm text-stone-600 dark:text-stone-300">{r.description}</p>
 					</div>
 					<footer class="mt-3 flex items-center justify-between text-xs text-stone-500">
-						<span>{r.author?.email ?? 'Anonymous'}</span>
+						<span>{r.author?.username ?? 'Anonymous'}</span>
 						<time>{r.createdAt.toLocaleDateString()}</time>
 					</footer>
 					{#if r.tags?.length}

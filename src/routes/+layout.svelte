@@ -55,7 +55,7 @@
 			<Button href={resolve('/chef')} variant="outline" size="icon"><User class="h-[1.2rem] w-[1.2rem]"/></Button>
 		{/if}
 	{:else}
-		<Button href={data.authURL} variant="outline" size="icon"><LogIn class="h-[1.2rem] w-[1.2rem]"/></Button>
+		<Button href={resolve('/auth/login/')} variant="outline" size="icon"><LogIn class="h-[1.2rem] w-[1.2rem]"/></Button>
 	{/if}
 </nav>
 

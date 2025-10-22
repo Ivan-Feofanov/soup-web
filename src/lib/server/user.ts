@@ -1,6 +1,6 @@
 import type { Cookies } from '@sveltejs/kit';
-import type { User } from '@lucide/svelte';
 import { BaseAPI, type Fetch } from '$lib/server/base';
+import type { User } from '$lib/types';
 
 export class UserAPI extends BaseAPI {
 	constructor(cookies: Cookies, fetch: Fetch) {

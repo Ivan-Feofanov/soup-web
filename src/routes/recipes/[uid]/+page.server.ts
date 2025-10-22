@@ -1,6 +1,6 @@
 import { superValidate, type SuperValidated } from 'sveltekit-superforms';
 import { zod4 } from "sveltekit-superforms/adapters";
-import type { Ingredient, Recipe, Unit } from '$lib/types';
+import type { Ingredient, Recipe, Unit, User } from '$lib/types';
 import type { PageServerLoad } from './$types';
 import { type Actions, error, fail, redirect } from '@sveltejs/kit';
 import {
@@ -14,6 +14,7 @@ import {
 import { KitchenAPI } from '$lib/server/kitchen';
 
 interface PageData {
+	user: User | null,
 	recipe: Recipe | null;
 	ingredients: Ingredient[];
 	units: Unit[];
@@ -22,11 +23,13 @@ interface PageData {
 	unitAddForm: SuperValidated<UnitSchema>;
 }
 
-export const load: PageServerLoad = async ({ cookies, params }): Promise<PageData> => {
+export const load: PageServerLoad = async ({ cookies, params, parent }): Promise<PageData> => {
+	const { user } = await parent();
 	const kitchen = new KitchenAPI(cookies, fetch);
 	if (params.uid === 'new') {
 		try {
 			return {
+				user,
 				recipe: null,
 				ingredients: await kitchen.GetIngredients(),
 				units: await kitchen.GetUnits(),
@@ -43,6 +46,7 @@ export const load: PageServerLoad = async ({ cookies, params }): Promise<PageDat
 	try {
 		const recipe = await kitchen.GetRecipe(params.uid);
 		return {
+			user,
 			recipe,
 			ingredients: [],
 			units: [],
@@ -73,7 +77,21 @@ export const actions: Actions = {
 			console.error(e)
 			return fail(500, { form })
 		}
-		redirect(303, `/recipes/${recipeUid}`)
+		throw redirect(303, `/recipes/${recipeUid}`)
+	},
+	deleteRecipe: async (event) => {
+		const recipeUid = event.params.uid;
+		if (!recipeUid) {
+			return fail(400, { error: 'Recipe UID is required' })
+		}
+		try {
+			const kitchenAPI = new KitchenAPI(event.cookies, event.fetch)
+			await kitchenAPI.DeleteRecipe(recipeUid);
+		} catch (e) {
+			console.error(e)
+			return fail(500, { error: 'Failed to delete recipe' })
+		}
+		throw redirect(303, '/');
 	},
 	addIngredient: async (event) => {
 		const form = await superValidate(event, zod4(ingredientSchema));

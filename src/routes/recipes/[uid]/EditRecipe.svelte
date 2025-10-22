@@ -16,9 +16,9 @@
 	import { cn } from "$lib/utils.js";
 	import Divider from '$lib/components/Divider.svelte';
 	import { superForm } from 'sveltekit-superforms';
-	import type { PageProps } from './$types';
+	import type { PageData } from './$types';
 
-	let { data }: PageProps = $props();
+	let { data }: { data: PageData } = $props();
 	let { recipe, ingredients, units, form: formData, ingredientAddForm: ingredientAddFormData, unitAddForm: unitAddFormData } = data;
 	let ingredientsList = $state(ingredients);
 	let unitsList = $state(units);

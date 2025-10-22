@@ -26,13 +26,16 @@ interface PageData {
 export const load: PageServerLoad = async ({ cookies, params, parent }): Promise<PageData> => {
 	const { user } = await parent();
 	const kitchen = new KitchenAPI(cookies, fetch);
+	const ingredients = await kitchen.GetIngredients();
+	const units = await kitchen.GetUnits();
+
 	if (params.uid === 'new') {
 		try {
 			return {
 				user,
 				recipe: null,
-				ingredients: await kitchen.GetIngredients(),
-				units: await kitchen.GetUnits(),
+				ingredients,
+				units,
 				form: await superValidate(zod4(recipeSchema)),
 				ingredientAddForm: await superValidate(zod4(ingredientSchema)),
 				unitAddForm: await superValidate(zod4(unitSchema))
@@ -45,12 +48,26 @@ export const load: PageServerLoad = async ({ cookies, params, parent }): Promise
 
 	try {
 		const recipe = await kitchen.GetRecipe(params.uid);
+		const recipeFormData = {
+			title: recipe.title,
+			description: recipe.description,
+			notes: recipe.notes,
+			image: recipe.image,
+			instructions: recipe.instructions?.map(i => i.content) || [],
+			ingredients: recipe.ingredients?.map(i => ({
+				ingredient_uid: i.ingredient.uid,
+				unit_uid: i.unit?.uid || '',
+				quantity: i.quantity,
+				notes: i.notes
+			})) || []
+		};
+		const form = await superValidate(recipeFormData, zod4(recipeSchema));
 		return {
 			user,
 			recipe,
-			ingredients: [],
-			units: [],
-			form: await superValidate(zod4(recipeSchema)),
+			ingredients,
+			units,
+			form,
 			ingredientAddForm: await superValidate(zod4(ingredientSchema)),
 			unitAddForm: await superValidate(zod4(unitSchema))
 		};
@@ -62,6 +79,7 @@ export const load: PageServerLoad = async ({ cookies, params, parent }): Promise
 
 export const actions: Actions = {
 	saveRecipe: async (event) => {
+		const kitchenAPI = new KitchenAPI(event.cookies, event.fetch);
 		const form = await superValidate(event, zod4(recipeSchema));
 		if (!form.valid) {
 			console.error(form.errors)
@@ -69,13 +87,22 @@ export const actions: Actions = {
 				form,
 			});
 		}
-		let recipeUid: string;
-		try {
-			const kitchenAPI = new KitchenAPI(event.cookies, event.fetch)
-			recipeUid = await kitchenAPI.CreateRecipe(form.data);
-		} catch (e) {
-			console.error(e)
-			return fail(500, { form })
+		let recipeUid = event.params.uid;
+		if (event.params.uid === 'new') {
+			try {
+				recipeUid = await kitchenAPI.CreateRecipe(form.data);
+			} catch (e) {
+				console.error(e);
+				return fail(500, { form });
+			}
+		} else if (event.params.uid) {
+			recipeUid = event.params.uid;
+			try {
+				await kitchenAPI.UpdateRecipe(recipeUid, form.data);
+			} catch (e) {
+				console.error(e);
+				return fail(500, { form });
+			}
 		}
 		throw redirect(303, `/recipes/${recipeUid}`)
 	},

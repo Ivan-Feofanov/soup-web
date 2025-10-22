@@ -17,8 +17,9 @@
 	import Divider from '$lib/components/Divider.svelte';
 	import { superForm } from 'sveltekit-superforms';
 	import type { PageData } from './$types';
+	import SuperDebug from 'sveltekit-superforms/SuperDebug.svelte';
 
-	let { data }: { data: PageData } = $props();
+	let { data, edit = $bindable() }: { data: PageData, edit?: boolean } = $props();
 	let { recipe, ingredients, units, form: formData, ingredientAddForm: ingredientAddFormData, unitAddForm: unitAddFormData } = data;
 	let ingredientsList = $state(ingredients);
 	let unitsList = $state(units);
@@ -26,8 +27,14 @@
 	const unitsForSelection = $derived(unitsList.map((unit: Unit) => ({value: unit.uid, label: unit.name})))
 
 	const form = superForm(formData, {
-		dataType: 'json'
+		dataType: 'json',
+		onResult: ({ result }) => {
+			if (result.type === 'success' || result.type === 'redirect') {
+				edit = false;
+			}
+		}
 	});
+
 	const ingredientForm = superForm(ingredientAddFormData, {
 		dataType: 'json',
 		resetForm: false,
@@ -383,4 +390,4 @@
 		<Button type="submit">Save</Button>
 	</Field.Field>
 </form>
-<!--<SuperDebug data={$formValues} />-->
+<SuperDebug data={$formValues} />

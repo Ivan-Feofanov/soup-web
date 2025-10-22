@@ -9,6 +9,7 @@
 	import { buttonVariants } from "$lib/components/ui/button/index.js";
 
 	let { data }: PageProps = $props();
+	let edit = $state(false);
 </script>
 
 <section class="mx-auto max-w-5xl space-y-4">
@@ -20,7 +21,7 @@
 			<CircleChevronLeft />
 		</a>
 		{#if data.recipe && data.recipe.author?.uid === data.user?.uid}
-			<Button variant="outline" size="icon" href={resolve('/recipes/new')}><FilePenLine /></Button>
+			<Button onclick={() => edit = true} variant="outline" size="icon"><FilePenLine /></Button>
 			<AlertDialog.Root>
 				<AlertDialog.Trigger class={buttonVariants({ variant: "outline", size: "icon" })}>
 					<Trash2 />
@@ -42,8 +43,8 @@
 			</AlertDialog.Root>
 		{/if}
 	</div>
-	{#if !data.recipe}
-		<EditRecipe data={data}/>
+	{#if !data.recipe || edit}
+		<EditRecipe data={data} bind:edit/>
 	{:else}
 		<RecipeDetails recipe={data.recipe}/>
 	{/if}

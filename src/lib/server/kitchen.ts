@@ -78,7 +78,13 @@ export class KitchenAPI extends BaseAPI {
 	};
 
 	UpdateRecipe = async (uid: string, recipe: Record<string, unknown>) => {
-		return this.PATCH(`/recipes/${uid}`, recipe);
+		const response = await this.PATCH(`/recipes/${uid}`, recipe);
+		if (!response.ok) {
+			const errorData = await response.json();
+			console.error('Failed to update recipe:', errorData);
+			throw new Error(`Failed to update recipe: ${errorData}`);
+		}
+		return;
 	};
 	DeleteRecipe = async (uid: string) => {
 		return this.DELETE(`/recipes/${uid}`);

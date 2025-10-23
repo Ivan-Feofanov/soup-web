@@ -3,7 +3,7 @@ import { z } from 'zod/v4';
 const IngredientInRecipe = z.object({
 	ingredient_uid: z.uuid(),
 	unit_uid: z.uuid(),
-	quantity: z.number().min(1, 'Quantity must be at least 1').optional(),
+	quantity: z.number().optional(),
 	notes: z.string().optional()
 });
 

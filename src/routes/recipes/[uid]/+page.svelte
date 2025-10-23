@@ -35,8 +35,8 @@
 					</AlertDialog.Header>
 					<form method="post" action="?/deleteRecipe">
 						<AlertDialog.Footer>
-							<AlertDialog.Action type="submit" class={buttonVariants({ variant: "destructive" })}>Delete</AlertDialog.Action>
 							<AlertDialog.Cancel type="button">Cancel</AlertDialog.Cancel>
+							<AlertDialog.Action type="submit" class={buttonVariants({ variant: "destructive" })}>Delete</AlertDialog.Action>
 						</AlertDialog.Footer>
 					</form>
 				</AlertDialog.Content>

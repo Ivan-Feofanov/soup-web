@@ -1,9 +1,9 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { BACKEND_API_URL, AUTH_REDIRECT_URL } from '$env/static/private';
 import type { User } from '$lib/types';
+import { AuthAPI } from '$lib/server/auth';
 
-export const load: PageServerLoad = async ({ url, cookies }) => {
+export const load: PageServerLoad = async ({ url, cookies, fetch }) => {
 	const code = url.searchParams.get('code');
 
 	if (!code) {
@@ -11,8 +11,9 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 	}
 	let response: { access: string; refresh: string; user: User } | null = null;
 
+	const authAPI = new AuthAPI(cookies, fetch);
 	try {
-		response = await exchangeCodeForTokens(code);
+		response = await authAPI.ExchangeCodeForTokens(code);
 		cookies.set('refresh_token', response.refresh, {
 			path: '/',
 			httpOnly: true,
@@ -34,24 +35,3 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 	}
 	throw redirect(303, '/');
 };
-
-const exchangeCodeForTokens = async (code: string) => {
-	const response = await fetch(`${BACKEND_API_URL}/api/auth/login/google-oauth2/`, {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({
-			code: code,
-			redirect_uri: AUTH_REDIRECT_URL
-		})
-	});
-
-	if (!response.ok) {
-		const errorData = await response.json();
-		console.error('Failed to exchange code for tokens:', errorData);
-		throw new Error(`Failed to exchange code for tokens: ${errorData}`);
-	}
-
-	const data = await response.json();
-	const { access, refresh, user } = data;
-	return { access, refresh, user };
-}

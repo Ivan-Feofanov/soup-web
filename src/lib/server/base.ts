@@ -1,14 +1,13 @@
 import type { Cookies } from '@sveltejs/kit';
 import type { ErrorResponse, ValidationErrorResponse } from '$lib/types';
-
-const DJANGO_API_URL = 'http://localhost:8000';
+import { API_URL } from '$env/static/private'
 
 export type Fetch = typeof fetch;
 
-class ValidationError implements Error {
+export class ValidationError implements Error {
 	constructor(message: string, errors: Record<string, string[]>) {
-		this.message = message;
 		this.name = 'ValidationError';
+		this.message = message;
 		this.fields = errors;
 	}
 
@@ -18,8 +17,8 @@ class ValidationError implements Error {
 }
 
 export class BaseAPI {
-	baseUrl: string = `${DJANGO_API_URL}/api`;
-	serverUrl: string = DJANGO_API_URL;
+	baseUrl: string = `${API_URL}/api`;
+	serverUrl: string = API_URL;
 	fetch: Fetch;
 	private readonly cookies: Cookies;
 	private headers: Record<string, string> = {
@@ -131,8 +130,10 @@ export class BaseAPI {
 		return this.request('GET', url, null);
 	};
 
-	POST = async (url: string, body: Record<string, unknown>) => {
-		await this.ensureAuth();
+	POST = async (url: string, body: Record<string, unknown>, skipAuth: boolean = false) => {
+		if (!skipAuth) {
+			await this.ensureAuth();
+		}
 		return this.request('POST', url, body);
 	};
 

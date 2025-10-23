@@ -10,12 +10,8 @@ export class AuthAPI extends BaseAPI {
 
 	async ExchangeCodeForTokens(code: string) {
 		const response = await this.POST(`/login/google-oauth2/`, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				code: code,
+				code,
 				redirect_uri: AUTH_REDIRECT_URL
-			})
 		}, true);
 
 		if (!response.ok) {

@@ -17,6 +17,9 @@
   "observability": {
     "enabled": true
   },
+  "dev": {
+    "port": 5173
+  },
   /**
    * Smart Placement
    * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

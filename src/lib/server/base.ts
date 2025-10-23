@@ -1,6 +1,6 @@
 import type { Cookies } from '@sveltejs/kit';
 import type { ErrorResponse, ValidationErrorResponse } from '$lib/types';
-import { API_URL } from '$env/dynamic/private'
+import { API_URL } from '$env/static/private'
 
 export type Fetch = typeof fetch;
 
@@ -19,15 +19,50 @@ export class ValidationError implements Error {
 export class BaseAPI {
 	baseUrl: string = `${API_URL}/api`;
 	serverUrl: string = API_URL;
-	fetch: Fetch;
 	private readonly cookies: Cookies;
 	private headers: Record<string, string> = {
 		'Content-Type': 'application/json'
 	};
+	private readonly request: (
+		method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+		url: string,
+		body: Record<string, unknown> | null
+	) => Promise<Response>;
 
 	constructor(cookies: Cookies, fetch: Fetch) {
 		this.cookies = cookies;
-		this.fetch = fetch;
+		this.request = async (
+			method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+			url: string,
+			body: Record<string, unknown> | null = null
+		): Promise<Response> => {
+			await this.ensureAccessToken();
+
+			const options: RequestInit = { method, headers: this.headers };
+
+			if (body) {
+				options.body = JSON.stringify(body);
+			}
+
+			const response = await fetch(`${this.baseUrl}${url}`, options);
+
+			if (!response.ok) {
+				const responseData: ErrorResponse = await response.json();
+				if (responseData.code === 'token_not_valid') {
+					this.clearAccessToken();
+					return this.request(method, url, body);
+				}
+				console.error('API request failed:', JSON.stringify(responseData, null, 2));
+
+				if (response.status === 400) {
+					const validationError: ValidationErrorResponse =
+						responseData as unknown as ValidationErrorResponse;
+					throw new ValidationError(validationError.message, validationError.errors);
+				}
+			}
+
+			return response;
+		};
 	}
 
 	private async ensureAccessToken() {
@@ -93,56 +128,23 @@ export class BaseAPI {
 		}
 	}
 
-	private request = async (
-		method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
-		url: string,
-		body: Record<string, unknown> | null = null
-	): Promise<Response> => {
-		await this.ensureAccessToken();
-
-		const options: RequestInit = { method, headers: this.headers };
-
-		if (body) {
-			options.body = JSON.stringify(body);
-		}
-
-		const response = await this.fetch(`${this.baseUrl}${url}`, options);
-
-		if (!response.ok) {
-			const responseData: ErrorResponse = await response.json();
-			if (responseData.code === 'token_not_valid') {
-				this.clearAccessToken();
-				return this.request(method, url, body);
-			}
-			console.error('API request failed:', JSON.stringify(responseData, null, 2));
-
-			if (response.status === 400) {
-				const validationError: ValidationErrorResponse =
-					responseData as unknown as ValidationErrorResponse;
-				throw new ValidationError(validationError.message, validationError.errors);
-			}
-		}
-
-		return response;
-	};
-
-	GET = async (url: string) => {
+	async GET(url: string) {
 		return this.request('GET', url, null);
-	};
+	}
 
-	POST = async (url: string, body: Record<string, unknown>, skipAuth: boolean = false) => {
+	async POST (url: string, body: Record<string, unknown>, skipAuth: boolean = false)  {
 		if (!skipAuth) {
 			await this.ensureAuth();
 		}
 		return this.request('POST', url, body);
 	};
 
-	PATCH = async (url: string, body: Record<string, unknown>) => {
+	async PATCH (url: string, body: Record<string, unknown>) {
 		await this.ensureAuth();
 		return this.request('PATCH', url, body);
 	};
 
-	DELETE = async (url: string) => {
+	async DELETE (url: string) {
 		await this.ensureAuth();
 		return this.request('DELETE', url, null);
 	};

@@ -8,7 +8,7 @@ export class UserAPI extends BaseAPI {
 		this.baseUrl = `${this.serverUrl}/api/users`;
 	}
 
-	GetMe = async (): Promise<User | null> => {
+	async GetMe (): Promise<User | null> {
 		if (!this.isAuthenticated()) {
 			return null;
 		}
@@ -22,7 +22,7 @@ export class UserAPI extends BaseAPI {
 		return await response.json();
 	};
 
-	UpdateUser = async (userUid: string, userData: { handler: string; username: string }) => {
+	async UpdateUser (userUid: string, userData: { handler: string; username: string }) {
 		return this.PATCH(`/${userUid}`, userData);
 	};
 }

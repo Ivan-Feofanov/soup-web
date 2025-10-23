@@ -8,7 +8,7 @@ export class KitchenAPI extends BaseAPI {
 		this.baseUrl = `${this.serverUrl}/api/kitchen`;
 	}
 
-	GetRecipes = async (): Promise<Recipe[]> => {
+	async GetRecipes(): Promise<Recipe[]> {
 		const response = await this.GET('/recipes/');
 		if (!response.ok) {
 			const errorData = await response.json();
@@ -27,7 +27,7 @@ export class KitchenAPI extends BaseAPI {
 		}));
 	};
 
-	GetRecipe = async (uid: string): Promise<Recipe> => {
+	async GetRecipe (uid: string): Promise<Recipe> {
 		const response = await this.GET(`/recipes/${uid}`);
 		if (!response.ok) {
 			const errorData = await response.json();
@@ -46,7 +46,7 @@ export class KitchenAPI extends BaseAPI {
 		};
 	};
 
-	GetIngredients = async (): Promise<Ingredient[]> => {
+	async GetIngredients (): Promise<Ingredient[]> {
 		const response = await this.GET('/ingredients/');
 		if (!response.ok) {
 			const errorData = await response.json();
@@ -56,7 +56,7 @@ export class KitchenAPI extends BaseAPI {
 		return await response.json();
 	};
 
-	GetUnits = async (): Promise<Unit[]> => {
+	async GetUnits (): Promise<Unit[]> {
 		const response = await this.GET('/units/');
 		if (!response.ok) {
 			const errorData = await response.json();
@@ -66,7 +66,7 @@ export class KitchenAPI extends BaseAPI {
 		return await response.json();
 	};
 
-	CreateRecipe = async (recipe: Record<string, unknown>): Promise<string> => {
+	async CreateRecipe (recipe: Record<string, unknown>): Promise<string> {
 		const response = await this.POST('/recipes/', recipe);
 		if (!response.ok) {
 			const errorData = await response.json();
@@ -77,7 +77,7 @@ export class KitchenAPI extends BaseAPI {
 		return data.uid;
 	};
 
-	UpdateRecipe = async (uid: string, recipe: Record<string, unknown>) => {
+	async UpdateRecipe (uid: string, recipe: Record<string, unknown>) {
 		const response = await this.PATCH(`/recipes/${uid}`, recipe);
 		if (!response.ok) {
 			const errorData = await response.json();
@@ -86,11 +86,12 @@ export class KitchenAPI extends BaseAPI {
 		}
 		return;
 	};
-	DeleteRecipe = async (uid: string) => {
+
+	async DeleteRecipe (uid: string) {
 		return this.DELETE(`/recipes/${uid}`);
 	};
 
-	addIngredient = async (data: Record<string, unknown>): Promise<{created: boolean, ingredient: Ingredient}> => {
+	async addIngredient(data: Record<string, unknown>): Promise<{created: boolean, ingredient: Ingredient}> {
 		const response = await this.POST('/ingredients/', data);
 		if (!response.ok) {
 			const errorData = await response.json();
@@ -101,7 +102,7 @@ export class KitchenAPI extends BaseAPI {
 		return {created: response.status === 201, ingredient: await response.json()};
 	};
 
-	addUnit = async (data: Record<string, unknown>): Promise<{created: boolean, unit: Unit}> => {
+	async addUnit (data: Record<string, unknown>): Promise<{created: boolean, unit: Unit}> {
 		const response = await this.POST('/units/', data);
 		if (!response.ok) {
 			const errorData = await response.json();

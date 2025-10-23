@@ -1,6 +1,6 @@
 import type { Cookies } from '@sveltejs/kit';
 import { BaseAPI, type Fetch } from '$lib/server/base';
-import { AUTH_REDIRECT_URL } from '$env/dynamic/private';
+import { AUTH_REDIRECT_URL } from '$env/static/private';
 
 export class AuthAPI extends BaseAPI {
 	constructor(cookies: Cookies, fetch: Fetch) {
@@ -8,7 +8,7 @@ export class AuthAPI extends BaseAPI {
 		this.baseUrl = `${this.serverUrl}/api/auth`;
 	}
 
-	ExchangeCodeForTokens = async (code: string) => {
+	async ExchangeCodeForTokens(code: string) {
 		const response = await this.POST(`/login/google-oauth2/`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },

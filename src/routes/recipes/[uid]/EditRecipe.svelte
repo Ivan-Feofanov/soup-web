@@ -17,7 +17,6 @@
 	import Divider from '$lib/components/Divider.svelte';
 	import { superForm } from 'sveltekit-superforms';
 	import type { PageData } from './$types';
-	import SuperDebug from 'sveltekit-superforms/SuperDebug.svelte';
 
 	let { data, edit = $bindable() }: { data: PageData, edit?: boolean } = $props();
 	let { recipe, ingredients, units, form: formData, ingredientAddForm: ingredientAddFormData, unitAddForm: unitAddFormData } = data;
@@ -390,4 +389,4 @@
 		<Button type="submit">Save</Button>
 	</Field.Field>
 </form>
-<SuperDebug data={$formValues} />
+<!--<SuperDebug data={$formValues} />-->

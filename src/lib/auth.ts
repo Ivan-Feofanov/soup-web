@@ -1,4 +1,4 @@
-import { GOOGLE_CLIENT_ID, AUTH_REDIRECT_URL } from '$env/static/private';
+import { GOOGLE_CLIENT_ID, AUTH_REDIRECT_URL } from '$env/dynamic/private';
 
 export const getGoogleAuthUrl = () => {
 	const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');

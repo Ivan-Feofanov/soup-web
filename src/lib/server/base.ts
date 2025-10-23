@@ -1,6 +1,6 @@
 import type { Cookies } from '@sveltejs/kit';
 import type { ErrorResponse, ValidationErrorResponse } from '$lib/types';
-import { API_URL } from '$env/static/private'
+import { API_URL } from '$env/dynamic/private'
 
 export type Fetch = typeof fetch;
 

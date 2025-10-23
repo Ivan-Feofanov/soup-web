@@ -1,6 +1,6 @@
 import type { Cookies } from '@sveltejs/kit';
 import { BaseAPI, type Fetch } from '$lib/server/base';
-import { AUTH_REDIRECT_URL } from '$env/static/private';
+import { AUTH_REDIRECT_URL } from '$env/dynamic/private';
 
 export class AuthAPI extends BaseAPI {
 	constructor(cookies: Cookies, fetch: Fetch) {

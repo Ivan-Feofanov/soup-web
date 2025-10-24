@@ -7,6 +7,14 @@ const IngredientInRecipe = z.object({
 	notes: z.string().optional()
 });
 
+const Instruction = z.object({
+	uid: z.string(),
+	step: z.number().optional(),
+	description: z.string().min(1, 'Instruction cannot be empty'),
+	timer: z.number().optional()
+});
+export type InstructionSchema = z.infer<typeof Instruction>;
+
 export const recipeSchema = z.object({
 	title: z
 		.string()
@@ -17,7 +25,7 @@ export const recipeSchema = z.object({
 		.min(1, 'Description is required')
 		.transform((value) => value.trim()),
 	notes: z.string().optional(),
-	instructions: z.array(z.string().min(1, 'Instruction cannot be empty')).default(['']),
+	instructions: z.array(Instruction).default([{uid: new Date().getTime().toString(), step: 1, description: ''}]),
 	ingredients: z.array(IngredientInRecipe).min(1, 'At least one ingredient is required'),
 	image: z.string().optional()
 });

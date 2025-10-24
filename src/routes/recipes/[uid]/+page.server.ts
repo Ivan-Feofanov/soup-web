@@ -53,7 +53,7 @@ export const load: PageServerLoad = async ({ cookies, params, parent }): Promise
 			description: recipe.description,
 			notes: recipe.notes,
 			image: recipe.image,
-			instructions: recipe.instructions?.map(i => i.content) || [],
+			instructions: recipe.instructions,
 			ingredients: recipe.ingredients?.map(i => ({
 				ingredient_uid: i.ingredient.uid,
 				unit_uid: i.unit?.uid || '',

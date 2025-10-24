@@ -3,7 +3,7 @@
 	import { resolve } from '$app/paths';
 	import { CircleChevronLeft, FilePenLine, Trash2 } from '@lucide/svelte';
 	import EditRecipe from './EditRecipe.svelte';
-	import RecipeDetails from '$lib/components/RecipeDetails.svelte';
+	import RecipeDetails from './RecipeDetails.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
 	import { buttonVariants } from "$lib/components/ui/button/index.js";

@@ -1,6 +1,8 @@
 <script lang="ts">
-	import type { Ingredient, Unit } from '$lib/types';
-	import { Plus, CircleX, Check, ChevronsUpDown }	 from '@lucide/svelte';
+	import type { Ingredient, Instruction, Unit } from '$lib/types';
+	import { type DndEvent, dndzone, overrideItemIdKeyNameBeforeInitialisingDndZones } from 'svelte-dnd-action';
+	import { flip } from 'svelte/animate';
+	import { Plus, CircleX, Check, ChevronsUpDown, GripVertical }	 from '@lucide/svelte';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import * as Form from "$lib/components/ui/form";
 	import * as Field from "$lib/components/ui/field";
@@ -19,7 +21,7 @@
 	import type { PageData } from './$types';
 
 	let { data, edit = $bindable() }: { data: PageData, edit?: boolean } = $props();
-	let { recipe, ingredients, units, form: formData, ingredientAddForm: ingredientAddFormData, unitAddForm: unitAddFormData } = data;
+	let { ingredients, units, form: formData, ingredientAddForm: ingredientAddFormData, unitAddForm: unitAddFormData } = data;
 	let ingredientsList = $state(ingredients);
 	let unitsList = $state(units);
 	const ingredientsForSelection = $derived(ingredientsList.map((ingredient: Ingredient) => ({value: ingredient.uid, label: ingredient.name})))
@@ -69,12 +71,19 @@
 	const { form: unitFormValues, enhance: unitEnhance } = unitForm;
 
 	// Instructions
-	function addInstruction() {
-		$formValues.instructions = [...$formValues.instructions, ''];
+	overrideItemIdKeyNameBeforeInitialisingDndZones('uid')
+	function handleDndConsider(e: CustomEvent<DndEvent<Instruction>>) {
+		$formValues.instructions = e.detail.items.map((item, index) => ({ ...item, step: index + 1 }));
+	}
+	function handleDndFinalize(e: CustomEvent<DndEvent<Instruction>>) {
+		$formValues.instructions = e.detail.items.map((item, index) => ({ ...item, step: index + 1 }));
 	}
 
-	function removeInstruction(index: number) {
-		$formValues.instructions = $formValues.instructions.filter((_, i) => i !== index);
+	function addInstruction() {
+		$formValues.instructions = [...$formValues.instructions, { uid: Date.now().toString(), step: $formValues.instructions.length + 1, description: '' }];
+	}
+	function removeInstruction(idToRemove: string) {
+		$formValues.instructions = $formValues.instructions.filter(instr => instr.uid !== idToRemove);
 	}
 
 	// Ingredients
@@ -160,8 +169,8 @@
 	{/if}
 {/snippet}
 
-<form method="POST" use:enhance action="?/saveRecipe" class="md:w-2/3 space-y-6">
-	<Divider text={recipe?.title ?? 'New Recipe'}/>
+<form method="POST" use:enhance action="?/saveRecipe" class="relative sm:w-2/3 mx-auto space-y-6 sm:border sm:p-6 rounded-lg">
+	<span class="absolute -top-6.5 text-2xl p-2 bg-background">{$formValues.title || "New Recipe"}</span>
 
 	<!-- Title -->
 	<Form.Field {form} name="title">
@@ -197,36 +206,48 @@
 
 	<!-- Instructions -->
 	<Divider text="Instructions"/>
-	<Field.Group class="gap-4">
+	<div
+		class="space-y-2 p-2 rounded-md"
+		use:dndzone={{ items: $formValues.instructions, flipDurationMs: 200, dropTargetClasses: ['outline'], dropTargetStyle: {} }}
+		onconsider={handleDndConsider}
+		onfinalize={handleDndFinalize}
+	>
 		<!-- eslint-disable-next-line @typescript-eslint/no-unused-vars -->
-		{#each $formValues.instructions as _, index (index)}
-			<Form.Field {form} name="instructions">
-				<Form.Control>
-					{#snippet children({ props })}
-					<div class="relative">
-						<Textarea
-							{...props}
-							bind:value={$formValues.instructions[index]}
-							aria-invalid={$errors.instructions && $errors.instructions[index] ? 'true' : undefined}
-						/>
-						<Button class="absolute -right-3.5 -top-4" variant="ghost" size="icon" onclick={() => removeInstruction(index)}><CircleX /></Button>
-					</div>
-					{/snippet}
-				</Form.Control>
-				{#if $errors.instructions}
-					<div class="text-sm text-destructive">
-						{$errors.instructions[index]}
-					</div>
-				{/if}
-			</Form.Field>
+		{#each $formValues.instructions as instruction (instruction.uid)}
+			<div animate:flip={{duration:200}}>
+				<Form.Field {form} name="instructions">
+					<Form.Control>
+						{#snippet children({ props })}
+						<div class="relative">
+							<div class="flex flex-row items-center gap-2">
+								<div><GripVertical /></div>
+								<Textarea
+									{...props}
+									bind:value={instruction.description}
+									aria-invalid={$errors.instructions && $errors.instructions[instruction.uid] ? 'true' : undefined}
+								/>
+							</div>
+							<Button class="absolute -right-3.5 -top-4" variant="ghost" size="icon" onclick={() => removeInstruction(instruction.uid)}><CircleX /></Button>
+						</div>
+						{/snippet}
+					</Form.Control>
+					{#if $errors.instructions && $errors.instructions[instruction.uid]}
+						<div class="text-sm text-destructive">
+							{$errors.instructions[instruction.uid]}
+						</div>
+					{/if}
+				</Form.Field>
+			</div>
 		{/each}
-		<Button onclick={() => addInstruction()} variant="outline"><Plus /></Button>
-	</Field.Group>
-	<Divider text="Ingredients" class="mt-2"/>
+		<div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+			<Button onclick={() => addInstruction()} variant="default"><Plus />Add</Button>
+		</div>
+	</div>
+	<Divider text="Ingredients" />
 
 	<!-- Ingredients -->
 	{#if selectedIngredients && selectedIngredients.length > 0}
-		<Card.Root class="w-full max-w-sm py-0">
+		<Card.Root class="w-full py-0">
 			<Card.Content class="p-2">
 				<Table.Root class="w-full rounded-xl bg-background">
 					<Table.Body class="rounded-xl divide-y divide-border">
@@ -374,7 +395,9 @@
 				</Select.Root>
 			</Field.Field>
 		</div>
-		<Button onclick={() => addIngredient()} class="mt-2">Add</Button>
+		<div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+			<Button onclick={() => addIngredient()} class="mt-2"><Plus />Add</Button>
+		</div>
 		{#if $errors.ingredients}
 			<div class="text-sm text-destructive">
 				{$errors.ingredients._errors?.join(', ')}
@@ -385,10 +408,10 @@
 
 	<Field.Separator class="mb-4" />
 
-	<Field.Field orientation="horizontal" class="flex-row-reverse">
+	<div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
 		<Button type="submit">Save</Button>
 		{#if edit}
 			<Button variant="outline" type="button" onclick={() => edit = false}>Cancel</Button>
 		{/if}
-	</Field.Field>
+	</div>
 </form>

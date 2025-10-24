@@ -25,8 +25,9 @@ export type Unit = {
 }
 
 export type Instruction = {
-	id: number;
-	content: string;
+	uid: string;
+	step?: number;
+	description: string;
 	timer?: number; // in minutes
 };
 

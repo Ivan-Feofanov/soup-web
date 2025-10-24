@@ -20,10 +20,6 @@ export class KitchenAPI extends BaseAPI {
 		return data.map((recipe: ServerRecipe) => ({
 			...recipe,
 			createdAt: new Date(recipe.created_at),
-			instructions: recipe.instructions?.map((instruction: string, index: number) => ({
-				id: index,
-				content: instruction
-			}))
 		}));
 	};
 
@@ -35,14 +31,11 @@ export class KitchenAPI extends BaseAPI {
 			throw new Error(`Failed to fetch recipe: ${errorData}`);
 		}
 		const data = await response.json();
+		console.log(data);
 
 		return {
 			...data,
-			createdAt: new Date(data.created_at),
-			instructions: data.instructions?.map((instruction: string, index: number) => ({
-				id: index,
-				content: instruction
-			})) as Recipe
+			createdAt: new Date(data.created_at)
 		};
 	};
 

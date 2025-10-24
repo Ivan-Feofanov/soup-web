@@ -4,7 +4,7 @@
 
 	const { recipe }: {recipe: Recipe} = $props();
 </script>
-<article class="space-y-4">
+<article class="sm:w-2/3 mx-auto space-y-6 sm:border sm:p-6 rounded-lg">
 	<header class="space-y-3">
 		<!-- Back link -->
 		<h1 class="text-3xl font-extrabold tracking-tight md:text-4xl">
@@ -54,9 +54,9 @@
 	<section>
 		<Divider text="Instructions" />
 		<ul class="mt-2 list-inside list-decimal space-y-2 marker:text-stone-600 dark:marker:text-stone-200">
-			{#each (recipe?.instructions ?? []) as instruction (instruction.id)}
+			{#each (recipe?.instructions ?? []) as instruction (instruction.uid)}
 				<li class="gap-2">
-					<span class=" text-stone-600 dark:text-stone-200">{instruction.content}</span>
+					<span class=" text-stone-600 dark:text-stone-200">{instruction.description}</span>
 				</li>
 			{/each}
 		</ul>

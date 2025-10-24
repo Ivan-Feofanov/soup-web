@@ -19,7 +19,7 @@
   },
   "dev": {
     "port": 5173
-  },
+  }
   /**
    * Smart Placement
    * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
@@ -35,11 +35,8 @@
    * Environment Variables
    * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
    */
-   "vars": {
-     "GOOGLE_CLIENT_ID":"710442695931-2e25p4ibjokn3npi6seh3b68t8b7un0t.apps.googleusercontent.com",
-     "AUTH_REDIRECT_URL": "https://soup-web.feofanov.workers.dev/auth/callback",
-     "API_URL": "https://soup-api.feofanov.dev"
-   }
+//   "vars": {
+//   }
   /**
    * Note: Use secrets to store sensitive data.
    * https://developers.cloudflare.com/workers/configuration/secrets/

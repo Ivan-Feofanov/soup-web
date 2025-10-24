@@ -383,9 +383,12 @@
 
 	</Field.Group>
 
-	<Field.Separator />
+	<Field.Separator class="mb-4" />
 
 	<Field.Field orientation="horizontal" class="flex-row-reverse">
 		<Button type="submit">Save</Button>
+		{#if edit}
+			<Button variant="outline" type="button" onclick={() => edit = false}>Cancel</Button>
+		{/if}
 	</Field.Field>
 </form>

@@ -64,35 +64,7 @@
 
 	{#if recipe?.author}
 		<footer class="text-sm text-stone-500 dark:text-stone-400 my-4">
-			<span>Author: {recipe.author.username}</span>
+			<span>{recipe.author.username}</span>
 		</footer>
 	{/if}
 </article>
-
-<!-- Comments section -->
-<section
-	class="space-y-4 rounded-xl border border-stone-200/60 bg-white/60 p-6 backdrop-blur md:p-8 dark:border-stone-700/60 dark:bg-stone-900/40"
->
-	<h2 class="text-2xl font-bold tracking-tight">Comments</h2>
-
-	{#if recipe?.comments?.length && recipe?.comments?.length > 0}
-		<ul class="space-y-4">
-			{#each recipe?.comments as comment (comment.id)}
-				<li
-					class="rounded-lg border border-stone-200/60 bg-stone-50/50 p-4 dark:border-stone-700/40 dark:bg-stone-800/30"
-				>
-					<strong class="block text-sm font-semibold text-stone-900 dark:text-stone-100">
-						{comment.author}
-					</strong>
-					<p class="mt-2 text-sm text-stone-600 dark:text-stone-300">
-						{comment.content}
-					</p>
-				</li>
-			{/each}
-		</ul>
-	{:else}
-		<p class="text-sm text-stone-600 dark:text-stone-300">
-			Комментариев пока нет. Будьте первым!
-		</p>
-	{/if}
-</section>

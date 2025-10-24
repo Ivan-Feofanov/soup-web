@@ -59,6 +59,6 @@
 	{/if}
 </nav>
 
-<main class="px-4 py-3">
+<main class="px-4 py-3 mb-4">
 	{@render children()}
 </main>

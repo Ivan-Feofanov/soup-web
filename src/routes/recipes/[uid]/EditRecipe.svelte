@@ -23,7 +23,6 @@
 	import Divider from '$lib/components/Divider.svelte';
 	import { superForm, fileProxy } from 'sveltekit-superforms';
 	import type { PageData } from './$types';
-	import SuperDebug from 'sveltekit-superforms/SuperDebug.svelte';
 	import { Image } from '@unpic/svelte';
 
 	let { data, edit = $bindable() }: { data: PageData; edit?: boolean } = $props();
@@ -271,7 +270,7 @@
 					{...props}
 					type="file"
 					hidden
-					accept="image/png, image/jpeg"
+					accept="image/png, image/jpeg, image/webp, image/avif"
 					bind:files={$file}
 					bind:this={imageInput}
 					onchange={onChange}

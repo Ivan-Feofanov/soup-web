@@ -5,14 +5,14 @@
 	import EditRecipe from './EditRecipe.svelte';
 	import RecipeDetails from './RecipeDetails.svelte';
 	import { Button } from '$lib/components/ui/button';
-	import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
-	import { buttonVariants } from "$lib/components/ui/button/index.js";
+	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
+	import { buttonVariants } from '$lib/components/ui/button/index.js';
 
 	let { data }: PageProps = $props();
 	let edit = $state(false);
 </script>
 
-<section class="mx-auto max-w-5xl space-y-4">
+<section class="mx-auto max-w-5xl">
 	<div class="flex items-center space-x-2">
 		<a
 			href={resolve('/')}
@@ -20,10 +20,10 @@
 		>
 			<CircleChevronLeft />
 		</a>
-		{#if data.recipe && data.recipe.author?.uid === data.user?.uid}
-			<Button onclick={() => edit = true} variant="outline" size="icon"><FilePenLine /></Button>
+		{#if data.recipe && data.recipe.author?.uid === data.user?.uid && !edit}
+			<Button onclick={() => (edit = true)} variant="outline" size="icon"><FilePenLine /></Button>
 			<AlertDialog.Root>
-				<AlertDialog.Trigger class={buttonVariants({ variant: "outline", size: "icon" })}>
+				<AlertDialog.Trigger class={buttonVariants({ variant: 'outline', size: 'icon' })}>
 					<Trash2 />
 				</AlertDialog.Trigger>
 				<AlertDialog.Content>
@@ -36,7 +36,9 @@
 					<form method="post" action="?/deleteRecipe">
 						<AlertDialog.Footer>
 							<AlertDialog.Cancel type="button">Cancel</AlertDialog.Cancel>
-							<AlertDialog.Action type="submit" class={buttonVariants({ variant: "destructive" })}>Delete</AlertDialog.Action>
+							<AlertDialog.Action type="submit" class={buttonVariants({ variant: 'destructive' })}
+								>Delete</AlertDialog.Action
+							>
 						</AlertDialog.Footer>
 					</form>
 				</AlertDialog.Content>
@@ -44,8 +46,8 @@
 		{/if}
 	</div>
 	{#if !data.recipe || edit}
-		<EditRecipe data={data} bind:edit/>
+		<EditRecipe {data} bind:edit />
 	{:else}
-		<RecipeDetails recipe={data.recipe}/>
+		<RecipeDetails recipe={data.recipe} />
 	{/if}
 </section>

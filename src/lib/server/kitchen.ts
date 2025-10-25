@@ -19,11 +19,11 @@ export class KitchenAPI extends BaseAPI {
 
 		return data.map((recipe: ServerRecipe) => ({
 			...recipe,
-			createdAt: new Date(recipe.created_at),
+			createdAt: new Date(recipe.created_at)
 		}));
-	};
+	}
 
-	async GetRecipe (uid: string): Promise<Recipe> {
+	async GetRecipe(uid: string): Promise<Recipe> {
 		const response = await this.GET(`/recipes/${uid}`);
 		if (!response.ok) {
 			const errorData = await response.json();
@@ -31,15 +31,14 @@ export class KitchenAPI extends BaseAPI {
 			throw new Error(`Failed to fetch recipe: ${errorData}`);
 		}
 		const data = await response.json();
-		console.log(data);
 
 		return {
 			...data,
 			createdAt: new Date(data.created_at)
 		};
-	};
+	}
 
-	async GetIngredients (): Promise<Ingredient[]> {
+	async GetIngredients(): Promise<Ingredient[]> {
 		const response = await this.GET('/ingredients/');
 		if (!response.ok) {
 			const errorData = await response.json();
@@ -47,9 +46,9 @@ export class KitchenAPI extends BaseAPI {
 			throw new Error(`Failed to fetch ingredients: ${errorData}`);
 		}
 		return await response.json();
-	};
+	}
 
-	async GetUnits (): Promise<Unit[]> {
+	async GetUnits(): Promise<Unit[]> {
 		const response = await this.GET('/units/');
 		if (!response.ok) {
 			const errorData = await response.json();
@@ -57,9 +56,9 @@ export class KitchenAPI extends BaseAPI {
 			throw new Error(`Failed to fetch units: ${errorData}`);
 		}
 		return await response.json();
-	};
+	}
 
-	async CreateRecipe (recipe: Record<string, unknown>): Promise<string> {
+	async CreateRecipe(recipe: Record<string, unknown>): Promise<string> {
 		const response = await this.POST('/recipes/', recipe);
 		if (!response.ok) {
 			const errorData = await response.json();
@@ -68,9 +67,9 @@ export class KitchenAPI extends BaseAPI {
 		}
 		const data: ServerRecipe = await response.json();
 		return data.uid;
-	};
+	}
 
-	async UpdateRecipe (uid: string, recipe: Record<string, unknown>) {
+	async UpdateRecipe(uid: string, recipe: Record<string, unknown>) {
 		const response = await this.PATCH(`/recipes/${uid}`, recipe);
 		if (!response.ok) {
 			const errorData = await response.json();
@@ -78,13 +77,15 @@ export class KitchenAPI extends BaseAPI {
 			throw new Error(`Failed to update recipe: ${errorData}`);
 		}
 		return;
-	};
+	}
 
-	async DeleteRecipe (uid: string) {
+	async DeleteRecipe(uid: string) {
 		return this.DELETE(`/recipes/${uid}`);
-	};
+	}
 
-	async addIngredient(data: Record<string, unknown>): Promise<{created: boolean, ingredient: Ingredient}> {
+	async addIngredient(
+		data: Record<string, unknown>
+	): Promise<{ created: boolean; ingredient: Ingredient }> {
 		const response = await this.POST('/ingredients/', data);
 		if (!response.ok) {
 			const errorData = await response.json();
@@ -92,16 +93,16 @@ export class KitchenAPI extends BaseAPI {
 			throw new Error(`Failed to add ingredient: ${errorData}`);
 		}
 
-		return {created: response.status === 201, ingredient: await response.json()};
-	};
+		return { created: response.status === 201, ingredient: await response.json() };
+	}
 
-	async addUnit (data: Record<string, unknown>): Promise<{created: boolean, unit: Unit}> {
+	async addUnit(data: Record<string, unknown>): Promise<{ created: boolean; unit: Unit }> {
 		const response = await this.POST('/units/', data);
 		if (!response.ok) {
 			const errorData = await response.json();
 			console.error('Failed to add unit:', errorData);
 			throw new Error(`Failed to add unit: ${errorData}`);
 		}
-		return {created: response.status === 201, unit: await response.json()};
+		return { created: response.status === 201, unit: await response.json() };
 	}
 }

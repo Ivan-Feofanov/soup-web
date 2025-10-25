@@ -25,9 +25,15 @@ export const recipeSchema = z.object({
 		.min(1, 'Description is required')
 		.transform((value) => value.trim()),
 	notes: z.string().optional(),
-	instructions: z.array(Instruction).default([{uid: new Date().getTime().toString(), step: 1, description: ''}]),
+	instructions: z
+		.array(Instruction)
+		.default([{ uid: new Date().getTime().toString(), step: 1, description: '' }]),
 	ingredients: z.array(IngredientInRecipe).min(1, 'At least one ingredient is required'),
-	image: z.string().optional()
+	image: z.string().optional(),
+	newImage: z
+		.instanceof(File)
+		.refine((f) => f.size < 10_000_000, 'Max 10 MB upload size.')
+		.optional()
 });
 export type RecipeSchema = z.infer<typeof recipeSchema>;
 
@@ -39,3 +45,10 @@ export const unitSchema = z.object({
 	abbreviation: z.string().min(1, 'Abbreviation is required')
 });
 export type UnitSchema = z.infer<typeof unitSchema>;
+
+export const fileSchema = z.object({
+	file: z
+		.instanceof(File, { message: 'Please upload a file.' })
+		.refine((f) => f.size < 10_000_000, 'Max 10 MB upload size.')
+});
+export type FileSchema = z.infer<typeof fileSchema>;

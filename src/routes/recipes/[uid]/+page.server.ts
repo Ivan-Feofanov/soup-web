@@ -1,5 +1,6 @@
+import { type R2Object } from '@cloudflare/workers-types';
 import { superValidate, type SuperValidated } from 'sveltekit-superforms';
-import { zod4 } from "sveltekit-superforms/adapters";
+import { zod4 } from 'sveltekit-superforms/adapters';
 import type { Ingredient, Recipe, Unit, User } from '$lib/types';
 import type { PageServerLoad } from './$types';
 import { type Actions, error, fail, redirect } from '@sveltejs/kit';
@@ -14,7 +15,7 @@ import {
 import { KitchenAPI } from '$lib/server/kitchen';
 
 interface PageData {
-	user: User | null,
+	user: User | null;
 	recipe: Recipe | null;
 	ingredients: Ingredient[];
 	units: Unit[];
@@ -39,7 +40,7 @@ export const load: PageServerLoad = async ({ cookies, params, parent }): Promise
 				form: await superValidate(zod4(recipeSchema)),
 				ingredientAddForm: await superValidate(zod4(ingredientSchema)),
 				unitAddForm: await superValidate(zod4(unitSchema))
-			}
+			};
 		} catch (err) {
 			console.error(err);
 			return error(500, 'Failed to fetch ingredients or units');
@@ -54,12 +55,13 @@ export const load: PageServerLoad = async ({ cookies, params, parent }): Promise
 			notes: recipe.notes,
 			image: recipe.image,
 			instructions: recipe.instructions,
-			ingredients: recipe.ingredients?.map(i => ({
-				ingredient_uid: i.ingredient.uid,
-				unit_uid: i.unit?.uid || '',
-				quantity: i.quantity,
-				notes: i.notes
-			})) || []
+			ingredients:
+				recipe.ingredients?.map((i) => ({
+					ingredient_uid: i.ingredient.uid,
+					unit_uid: i.unit?.uid || '',
+					quantity: i.quantity,
+					notes: i.notes
+				})) || []
 		};
 		const form = await superValidate(recipeFormData, zod4(recipeSchema));
 		return {
@@ -82,11 +84,31 @@ export const actions: Actions = {
 		const kitchenAPI = new KitchenAPI(event.cookies, event.fetch);
 		const form = await superValidate(event, zod4(recipeSchema));
 		if (!form.valid) {
-			console.error(form.errors)
+			console.error(form.errors);
 			return fail(400, {
-				form,
+				form
 			});
 		}
+
+		let r2Response: R2Object | null;
+		if (event.platform && event.platform.env.IMAGES && form.data.newImage) {
+			const fileData = await form.data.newImage.arrayBuffer();
+			try {
+				r2Response = await event.platform.env.IMAGES.put(form.data.newImage.name, fileData);
+			} catch (e) {
+				console.error(e);
+				return fail(500, { form });
+			}
+			if (form.data.image) {
+				try {
+					await event.platform.env.IMAGES.delete(form.data.image);
+				} catch (e) {
+					console.warn('Failed to delete old image', e);
+				}
+			}
+			form.data.image = r2Response?.key;
+		}
+
 		let recipeUid = event.params.uid;
 		if (event.params.uid === 'new') {
 			try {
@@ -104,44 +126,44 @@ export const actions: Actions = {
 				return fail(500, { form });
 			}
 		}
-		throw redirect(303, `/recipes/${recipeUid}`)
+		throw redirect(303, `/recipes/${recipeUid}`);
 	},
 	deleteRecipe: async (event) => {
 		const recipeUid = event.params.uid;
 		if (!recipeUid) {
-			return fail(400, { error: 'Recipe UID is required' })
+			return fail(400, { error: 'Recipe UID is required' });
 		}
 		try {
-			const kitchenAPI = new KitchenAPI(event.cookies, event.fetch)
+			const kitchenAPI = new KitchenAPI(event.cookies, event.fetch);
 			await kitchenAPI.DeleteRecipe(recipeUid);
 		} catch (e) {
-			console.error(e)
-			return fail(500, { error: 'Failed to delete recipe' })
+			console.error(e);
+			return fail(500, { error: 'Failed to delete recipe' });
 		}
 		throw redirect(303, '/');
 	},
 	addIngredient: async (event) => {
 		const form = await superValidate(event, zod4(ingredientSchema));
 		if (!form.valid) {
-			console.error(form.errors)
+			console.error(form.errors);
 			return fail(400, {
-				form,
+				form
 			});
 		}
-		const kitchenAPI = new KitchenAPI(event.cookies, event.fetch)
-		const { created, ingredient } = await kitchenAPI.addIngredient(form.data)
-		return {success: true, form, ingredient, created}
+		const kitchenAPI = new KitchenAPI(event.cookies, event.fetch);
+		const { created, ingredient } = await kitchenAPI.addIngredient(form.data);
+		return { success: true, form, ingredient, created };
 	},
 	addUnit: async (event) => {
 		const form = await superValidate(event, zod4(unitSchema));
 		if (!form.valid) {
-			console.error(form.errors)
+			console.error(form.errors);
 			return fail(400, {
-				form,
+				form
 			});
 		}
-		const kitchenAPI = new KitchenAPI(event.cookies, event.fetch)
-		const { created, unit } = await kitchenAPI.addUnit(form.data)
-		return {success: true, form, unit, created}
+		const kitchenAPI = new KitchenAPI(event.cookies, event.fetch);
+		const { created, unit } = await kitchenAPI.addUnit(form.data);
+		return { success: true, form, unit, created };
 	}
 };

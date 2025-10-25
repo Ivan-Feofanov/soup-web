@@ -1,31 +1,50 @@
 <script lang="ts">
 	import type { Ingredient, Instruction, Unit } from '$lib/types';
-	import { type DndEvent, dndzone, overrideItemIdKeyNameBeforeInitialisingDndZones } from 'svelte-dnd-action';
+	import {
+		type DndEvent,
+		dndzone,
+		overrideItemIdKeyNameBeforeInitialisingDndZones
+	} from 'svelte-dnd-action';
 	import { flip } from 'svelte/animate';
-	import { Plus, CircleX, Check, ChevronsUpDown, GripVertical }	 from '@lucide/svelte';
+	import { Plus, CircleX, Check, ChevronsUpDown, GripVertical, ImageUp } from '@lucide/svelte';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
-	import * as Form from "$lib/components/ui/form";
-	import * as Field from "$lib/components/ui/field";
-	import * as Select from "$lib/components/ui/select";
-	import * as Card from "$lib/components/ui/card";
-	import * as Table from "$lib/components/ui/table";
-	import * as Command from "$lib/components/ui/command";
-	import * as Popover from "$lib/components/ui/popover";
-	import * as Dialog from "$lib/components/ui/dialog";
-	import { Input } from "$lib/components/ui/input";
-	import { Textarea } from "$lib/components/ui/textarea";
-	import { tick } from "svelte";
-	import { cn } from "$lib/utils.js";
+	import * as Form from '$lib/components/ui/form';
+	import * as Field from '$lib/components/ui/field';
+	import * as Select from '$lib/components/ui/select';
+	import * as Card from '$lib/components/ui/card';
+	import * as Table from '$lib/components/ui/table';
+	import * as Command from '$lib/components/ui/command';
+	import * as Popover from '$lib/components/ui/popover';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import { Input } from '$lib/components/ui/input';
+	import { Textarea } from '$lib/components/ui/textarea';
+	import { tick } from 'svelte';
+	import { cn, imgURL } from '$lib/utils';
 	import Divider from '$lib/components/Divider.svelte';
-	import { superForm } from 'sveltekit-superforms';
+	import { superForm, fileProxy } from 'sveltekit-superforms';
 	import type { PageData } from './$types';
+	import SuperDebug from 'sveltekit-superforms/SuperDebug.svelte';
+	import { Image } from '@unpic/svelte';
 
-	let { data, edit = $bindable() }: { data: PageData, edit?: boolean } = $props();
-	let { ingredients, units, form: formData, ingredientAddForm: ingredientAddFormData, unitAddForm: unitAddFormData } = data;
+	let { data, edit = $bindable() }: { data: PageData; edit?: boolean } = $props();
+	let {
+		ingredients,
+		units,
+		form: formData,
+		ingredientAddForm: ingredientAddFormData,
+		unitAddForm: unitAddFormData
+	} = data;
 	let ingredientsList = $state(ingredients);
 	let unitsList = $state(units);
-	const ingredientsForSelection = $derived(ingredientsList.map((ingredient: Ingredient) => ({value: ingredient.uid, label: ingredient.name})))
-	const unitsForSelection = $derived(unitsList.map((unit: Unit) => ({value: unit.uid, label: unit.name})))
+	const ingredientsForSelection = $derived(
+		ingredientsList.map((ingredient: Ingredient) => ({
+			value: ingredient.uid,
+			label: ingredient.name
+		}))
+	);
+	const unitsForSelection = $derived(
+		unitsList.map((unit: Unit) => ({ value: unit.uid, label: unit.name }))
+	);
 
 	const form = superForm(formData, {
 		dataType: 'json',
@@ -35,6 +54,7 @@
 			}
 		}
 	});
+	const file = fileProxy(form, 'newImage');
 
 	const ingredientForm = superForm(ingredientAddFormData, {
 		dataType: 'json',
@@ -43,7 +63,7 @@
 		onResult: ({ result }) => {
 			if (result.type === 'success' && result.data?.success) {
 				addIngredientDialogOpen = false;
-				ingredientSearch = "";
+				ingredientSearch = '';
 				selectedIngredientUID = result.data.ingredient.uid;
 				closeIngredientSelect();
 				if (result.data.created) {
@@ -52,6 +72,7 @@
 			}
 		}
 	});
+
 	const unitForm = superForm(unitAddFormData, {
 		dataType: 'json',
 		invalidateAll: false,
@@ -65,13 +86,30 @@
 				}
 			}
 		}
-	})
+	});
 	const { form: formValues, enhance, errors } = form;
 	const { form: ingredientFormValues, enhance: ingredientEnhance } = ingredientForm;
 	const { form: unitFormValues, enhance: unitEnhance } = unitForm;
+	// Image
+	let imageInput = $state<HTMLInputElement>(null!);
+	let imageSrc = $state('');
+
+	const onChange = () => {
+		if (!imageInput.files) return;
+		const file = imageInput.files[0];
+		if (file) {
+			const reader = new FileReader();
+			reader.addEventListener('load', function () {
+				imageSrc = reader.result as string;
+			});
+			reader.readAsDataURL(file);
+
+			return;
+		}
+	};
 
 	// Instructions
-	overrideItemIdKeyNameBeforeInitialisingDndZones('uid')
+	overrideItemIdKeyNameBeforeInitialisingDndZones('uid');
 	function handleDndConsider(e: CustomEvent<DndEvent<Instruction>>) {
 		$formValues.instructions = e.detail.items.map((item, index) => ({ ...item, step: index + 1 }));
 	}
@@ -80,84 +118,96 @@
 	}
 
 	function addInstruction() {
-		$formValues.instructions = [...$formValues.instructions, { uid: Date.now().toString(), step: $formValues.instructions.length + 1, description: '' }];
+		$formValues.instructions = [
+			...$formValues.instructions,
+			{ uid: Date.now().toString(), step: $formValues.instructions.length + 1, description: '' }
+		];
 	}
 	function removeInstruction(idToRemove: string) {
-		$formValues.instructions = $formValues.instructions.filter(instr => instr.uid !== idToRemove);
+		$formValues.instructions = $formValues.instructions.filter((instr) => instr.uid !== idToRemove);
 	}
 
 	// Ingredients
 	let addIngredientDialogOpen = $state(false);
 	let ingredientSelectOpen = $state(false);
-	let ingredientSearch = $state("");
+	let ingredientSearch = $state('');
 	let triggerRef = $state<HTMLButtonElement>(null!);
 	let quantity = $state(0);
 	let selectedIngredients = $derived($formValues.ingredients || []);
-	let selectedIngredientUID = $state("");
-	let selectedUnitUID = $state("");
+	let selectedIngredientUID = $state('');
+	let selectedUnitUID = $state('');
 
 	const openIngredientAddForm = () => {
 		$ingredientFormValues.name = ingredientSearch;
-	}
+	};
 
 	const selectedIngredientLabel = $derived(
 		ingredientsForSelection.find((f) => f.value === selectedIngredientUID)?.label
 	);
 	const selectedUnitLabel = $derived(
 		unitsForSelection.find((f) => f.value === selectedUnitUID)?.label
-	)
+	);
 
 	const addIngredient = () => {
 		if (!selectedIngredientUID || !selectedUnitUID) {
 			return;
 		}
-		$formValues.ingredients = [...selectedIngredients, {
-			ingredient_uid: selectedIngredientUID,
-			unit_uid: selectedUnitUID,
-			quantity: quantity
-		}]
-		ingredientSearch = "";
-		selectedIngredientUID = "";
-		selectedUnitUID = "";
+		$formValues.ingredients = [
+			...selectedIngredients,
+			{
+				ingredient_uid: selectedIngredientUID,
+				unit_uid: selectedUnitUID,
+				quantity: quantity
+			}
+		];
+		ingredientSearch = '';
+		selectedIngredientUID = '';
+		selectedUnitUID = '';
 		quantity = 0;
-	}
+	};
 
 	const removeIngredient = (ingredientUID: string) => {
-		$formValues.ingredients = selectedIngredients.filter(i => i.ingredient_uid !== ingredientUID);
-	}
+		$formValues.ingredients = selectedIngredients.filter((i) => i.ingredient_uid !== ingredientUID);
+	};
 
 	const closeIngredientSelect = () => {
 		ingredientSelectOpen = false;
 		tick().then(() => {
 			triggerRef.focus();
 		});
-	}
+	};
 
 	const ingredientLabel = (ingredientUID: string): string => {
-		const ingredient = ingredientsList.find(i => i.uid === ingredientUID);
-		return ingredient ? ingredient.name : "Unknown Ingredient";
-	}
+		const ingredient = ingredientsList.find((i) => i.uid === ingredientUID);
+		return ingredient ? ingredient.name : 'Unknown Ingredient';
+	};
 
 	type IngredientInRecipeError = {
 		quantity?: string[] | { _errors?: string[] };
 	};
 
-
 	// Units
 	let unitSelectOpen = $state(false);
 	let addUnitDialogOpen = $state(false);
 	const unitLabel = (unitUID: string): string => {
-		const unit = unitsList.find(u => u.uid === unitUID);
-		return unit ? unit.abbreviation || unit.name : "Unknown Unit";
-	}
+		const unit = unitsList.find((u) => u.uid === unitUID);
+		return unit ? unit.abbreviation || unit.name : 'Unknown Unit';
+	};
 	const closeUnitSelect = () => {
 		unitSelectOpen = false;
 		tick().then(() => {
 			triggerRef.focus();
 		});
-	}
+	};
 
+	function preventDefault(fn: (event: Event) => void) {
+		return function (this: HTMLElement, event: Event) {
+			event.preventDefault();
+			fn.call(this, event);
+		};
+	}
 </script>
+
 {#snippet ingredientInRecipeError(err: IngredientInRecipeError)}
 	{#if err.quantity}
 		{@const errors = Array.isArray(err.quantity) ? err.quantity : err.quantity._errors}
@@ -169,8 +219,16 @@
 	{/if}
 {/snippet}
 
-<form method="POST" use:enhance action="?/saveRecipe" class="relative sm:w-2/3 mx-auto space-y-6 sm:border sm:p-6 rounded-lg">
-	<span class="absolute -top-6.5 text-2xl p-2 bg-background">{$formValues.title || "New Recipe"}</span>
+<form
+	method="POST"
+	enctype="multipart/form-data"
+	action="?/saveRecipe"
+	class="relative mx-auto space-y-6 rounded-lg max-sm:mt-8 sm:w-2/3 sm:border sm:p-6"
+	use:enhance
+>
+	<span class="absolute -top-6.5 bg-background p-2 text-2xl"
+		>{$formValues.title || 'New Recipe'}</span
+	>
 
 	<!-- Title -->
 	<Form.Field {form} name="title">
@@ -204,31 +262,86 @@
 		</Form.Control>
 	</Form.Field>
 
+	<!-- Image -->
+	<Form.Field {form} name="newImage" class="space-y-2">
+		<Form.Control>
+			{#snippet children({ props })}
+				<Form.Label>Image</Form.Label>
+				<input
+					{...props}
+					type="file"
+					hidden
+					accept="image/png, image/jpeg"
+					bind:files={$file}
+					bind:this={imageInput}
+					onchange={onChange}
+				/>
+				{#if !$formValues.newImage && !$formValues.image}
+					<button
+						class="flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border py-4 transition-colors duration-300 hover:bg-muted/50"
+						onclick={preventDefault(() => imageInput.click())}
+					>
+						<ImageUp />
+						<span>Upload recipe image</span>
+					</button>
+				{:else}
+					<div class="group relative overflow-hidden rounded-lg border p-2">
+						<Image
+							src={imageSrc || imgURL($formValues.image)}
+							alt="Uploaded image"
+							class="mx-auto max-h-80 w-auto rounded-md transition-all duration-300 group-hover:blur-xs"
+						/>
+						<button
+							class="group-hover:bg-opacity-20 absolute inset-0 flex cursor-pointer flex-col items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+							onclick={preventDefault(() => imageInput.click())}
+						>
+							<ImageUp />
+							<span>Upload new recipe image</span>
+						</button>
+					</div>
+				{/if}
+			{/snippet}
+		</Form.Control>
+		<Form.FieldErrors />
+	</Form.Field>
+
 	<!-- Instructions -->
-	<Divider text="Instructions"/>
+	<Divider text="Instructions" />
 	<div
-		class="space-y-2 p-2 rounded-md"
-		use:dndzone={{ items: $formValues.instructions, flipDurationMs: 200, dropTargetClasses: ['outline'], dropTargetStyle: {} }}
+		class="space-y-2 rounded-md p-2"
+		use:dndzone={{
+			items: $formValues.instructions,
+			flipDurationMs: 200,
+			dropTargetClasses: ['outline'],
+			dropTargetStyle: {}
+		}}
 		onconsider={handleDndConsider}
 		onfinalize={handleDndFinalize}
 	>
 		<!-- eslint-disable-next-line @typescript-eslint/no-unused-vars -->
 		{#each $formValues.instructions as instruction (instruction.uid)}
-			<div animate:flip={{duration:200}}>
+			<div animate:flip={{ duration: 200 }}>
 				<Form.Field {form} name="instructions">
 					<Form.Control>
 						{#snippet children({ props })}
-						<div class="relative">
-							<div class="flex flex-row items-center gap-2">
-								<div><GripVertical /></div>
-								<Textarea
-									{...props}
-									bind:value={instruction.description}
-									aria-invalid={$errors.instructions && $errors.instructions[instruction.uid] ? 'true' : undefined}
-								/>
+							<div class="relative">
+								<div class="flex flex-row items-center gap-2">
+									<div><GripVertical /></div>
+									<Textarea
+										{...props}
+										bind:value={instruction.description}
+										aria-invalid={$errors.instructions && $errors.instructions[instruction.uid]
+											? 'true'
+											: undefined}
+									/>
+								</div>
+								<Button
+									class="absolute -top-4 -right-3.5"
+									variant="ghost"
+									size="icon"
+									onclick={() => removeInstruction(instruction.uid)}><CircleX /></Button
+								>
 							</div>
-							<Button class="absolute -right-3.5 -top-4" variant="ghost" size="icon" onclick={() => removeInstruction(instruction.uid)}><CircleX /></Button>
-						</div>
 						{/snippet}
 					</Form.Control>
 					{#if $errors.instructions && $errors.instructions[instruction.uid]}
@@ -250,16 +363,23 @@
 		<Card.Root class="w-full py-0">
 			<Card.Content class="p-2">
 				<Table.Root class="w-full rounded-xl bg-background">
-					<Table.Body class="rounded-xl divide-y divide-border">
+					<Table.Body class="divide-y divide-border rounded-xl">
 						{#each selectedIngredients as ingredient, index (ingredient.ingredient_uid)}
 							<Table.Row>
-								<Table.Cell class="font-medium w-2/3 pl-4">{ingredientLabel(ingredient.ingredient_uid)}
+								<Table.Cell class="w-2/3 pl-4 font-medium"
+									>{ingredientLabel(ingredient.ingredient_uid)}
 									{#if $errors.ingredients && $errors.ingredients[index]}
 										{@render ingredientInRecipeError($errors.ingredients[index])}
 									{/if}
 								</Table.Cell>
 								<Table.Cell>{ingredient.quantity} {unitLabel(ingredient.unit_uid)}</Table.Cell>
-								<Table.Cell class="text-right"><Button onclick={() => removeIngredient(ingredient.ingredient_uid)} variant="ghost" size="icon"><CircleX /></Button></Table.Cell>
+								<Table.Cell class="text-right"
+									><Button
+										onclick={() => removeIngredient(ingredient.ingredient_uid)}
+										variant="ghost"
+										size="icon"><CircleX /></Button
+									></Table.Cell
+								>
 							</Table.Row>
 						{/each}
 					</Table.Body>
@@ -279,7 +399,7 @@
 						role="combobox"
 						aria-expanded={ingredientSelectOpen}
 					>
-						{selectedIngredientLabel || "Select an ingredient..."}
+						{selectedIngredientLabel || 'Select an ingredient...'}
 						<ChevronsUpDown class="opacity-50" />
 					</Button>
 				{/snippet}
@@ -288,10 +408,13 @@
 				<Command.Root>
 					<Command.Input placeholder="Search ingredient..." bind:value={ingredientSearch} />
 					<Command.List>
-						<Command.Empty class="p-4 text-center space-y-4">
+						<Command.Empty class="space-y-4 p-4 text-center">
 							<p>No ingredient found.</p>
 							<Dialog.Root bind:open={addIngredientDialogOpen}>
-								<Dialog.Trigger class={buttonVariants({ variant: "outline" })} onclick={openIngredientAddForm}>Add ingredient...</Dialog.Trigger>
+								<Dialog.Trigger
+									class={buttonVariants({ variant: 'outline' })}
+									onclick={openIngredientAddForm}>Add ingredient...</Dialog.Trigger
+								>
 								<Dialog.Content class="sm:max-w-[425px]">
 									<Dialog.Header>
 										<Dialog.Title>Add ingredient</Dialog.Title>
@@ -325,7 +448,7 @@
 									}}
 								>
 									<Check
-										class={cn(selectedIngredientUID !== ingredient.value && "text-transparent")}
+										class={cn(selectedIngredientUID !== ingredient.value && 'text-transparent')}
 									/>
 									{ingredient.label}
 								</Command.Item>
@@ -337,9 +460,7 @@
 		</Popover.Root>
 		<div class="grid grid-cols-2 gap-4">
 			<Field.Field>
-				<Field.Label for="quantity"
-				>Qty:</Field.Label
-				>
+				<Field.Label for="quantity">Qty:</Field.Label>
 				<Input
 					id="quantity"
 					placeholder="Enter quantity"
@@ -356,7 +477,9 @@
 					</Select.Trigger>
 					<Select.Content>
 						<Dialog.Root bind:open={addUnitDialogOpen}>
-							<Dialog.Trigger class={[buttonVariants({ variant: "outline" }), " w-full mb-1"]}><Plus />Add unit</Dialog.Trigger>
+							<Dialog.Trigger class={[buttonVariants({ variant: 'outline' }), ' mb-1 w-full']}
+								><Plus />Add unit</Dialog.Trigger
+							>
 							<Dialog.Content class="sm:max-w-[425px]">
 								<Dialog.Header>
 									<Dialog.Title>Add unit</Dialog.Title>
@@ -403,7 +526,6 @@
 				{$errors.ingredients._errors?.join(', ')}
 			</div>
 		{/if}
-
 	</Field.Group>
 
 	<Field.Separator class="mb-4" />
@@ -411,7 +533,8 @@
 	<div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
 		<Button type="submit">Save</Button>
 		{#if edit}
-			<Button variant="outline" type="button" onclick={() => edit = false}>Cancel</Button>
+			<Button variant="outline" type="button" onclick={() => (edit = false)}>Cancel</Button>
 		{/if}
 	</div>
 </form>
+<SuperDebug data={{ $formValues, $errors }} />

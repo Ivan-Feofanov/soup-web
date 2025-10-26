@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Ingredient, Instruction, Unit } from '$lib/types';
+	import Spinner from '$lib/assets/spinner.svelte';
 	import {
 		type DndEvent,
 		dndzone,
@@ -19,11 +20,12 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { tick } from 'svelte';
-	import { cn, imgURL } from '$lib/utils';
+	import { cn } from '$lib/utils';
 	import Divider from '$lib/components/Divider.svelte';
 	import { superForm, fileProxy } from 'sveltekit-superforms';
 	import type { PageData } from './$types';
 	import { Image } from '@unpic/svelte';
+	import { CldImage } from 'svelte-cloudinary';
 
 	let { data, edit = $bindable() }: { data: PageData; edit?: boolean } = $props();
 	let {
@@ -86,7 +88,8 @@
 			}
 		}
 	});
-	const { form: formValues, enhance, errors } = form;
+
+	const { form: formValues, enhance, errors, submitting } = form;
 	const { form: ingredientFormValues, enhance: ingredientEnhance } = ingredientForm;
 	const { form: unitFormValues, enhance: unitEnhance } = unitForm;
 	// Image
@@ -223,6 +226,8 @@
 	enctype="multipart/form-data"
 	action="?/saveRecipe"
 	class="relative mx-auto space-y-6 rounded-lg max-sm:mt-8 sm:w-2/3 sm:border sm:p-6"
+	class:opacity-60={$submitting}
+	class:pointer-events-none={$submitting}
 	use:enhance
 >
 	<span class="absolute -top-6.5 bg-background p-2 text-2xl"
@@ -283,15 +288,25 @@
 						<ImageUp />
 						<span>Upload recipe image</span>
 					</button>
-				{:else}
+				{:else if imageSrc || $formValues.image}
 					<div class="group relative overflow-hidden rounded-lg border p-2">
-						<Image
-							src={imageSrc || imgURL($formValues.image)}
-							alt="Uploaded image"
-							class="mx-auto max-h-80 w-auto rounded-md transition-all duration-300 group-hover:blur-xs"
-						/>
+						{#if imageSrc}
+							<Image
+								src={imageSrc}
+								alt={$formValues.title}
+								class="mx-auto max-h-80 w-auto rounded-md transition-all duration-300 group-hover:blur-xs"
+							/>
+						{:else}
+							<CldImage
+								src={$formValues.image || ''}
+								alt={$formValues.title}
+								height={600}
+								width={800}
+								class="mx-auto max-h-80 w-auto rounded-md transition-all duration-300 group-hover:blur-xs"
+							/>
+						{/if}
 						<button
-							class="group-hover:bg-opacity-20 absolute inset-0 flex cursor-pointer flex-col items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+							class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-black/50 group-hover:opacity-100"
 							onclick={preventDefault(() => imageInput.click())}
 						>
 							<ImageUp />
@@ -529,8 +544,14 @@
 
 	<Field.Separator class="mb-4" />
 
-	<div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-		<Button type="submit">Save</Button>
+	<div class="flex flex-col-reverse gap-2 text-base sm:flex-row sm:justify-end">
+		<Button type="submit" class="sm:w-18">
+			{#if $submitting}
+				<Spinner class="size-9" />
+			{:else}
+				Save
+			{/if}
+		</Button>
 		{#if edit}
 			<Button variant="outline" type="button" onclick={() => (edit = false)}>Cancel</Button>
 		{/if}

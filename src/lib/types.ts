@@ -8,7 +8,7 @@ export type Comment = {
 export type Ingredient = {
 	uid: string;
 	name: string;
-}
+};
 
 export type IngredientInRecipe = {
 	uid: string;
@@ -16,13 +16,13 @@ export type IngredientInRecipe = {
 	unit: Unit;
 	quantity: number;
 	notes?: string;
-}
+};
 
 export type Unit = {
 	uid: string;
 	name: string;
 	abbreviation?: string;
-}
+};
 
 export type Instruction = {
 	uid: string;
@@ -45,6 +45,7 @@ export type Recipe = {
 	notes?: string;
 	image?: string;
 	createdAt: Date;
+	updatedAt: Date;
 	author?: User;
 	tags?: string[];
 	comments?: Comment[];
@@ -57,6 +58,9 @@ export type ServerRecipe = {
 	title: string;
 	description: string;
 	created_at: string; // ISO date string
+	updated_at: string; // ISO date string
+	notes?: string;
+	image?: string;
 	author?: User;
 	tags?: string[];
 	comments?: Comment[];
@@ -64,7 +68,5 @@ export type ServerRecipe = {
 	instructions?: string[];
 };
 
-
-export type ErrorResponse = { detail: string, code: string };
-export type ValidationErrorResponse = { message: string, errors: Record<string, string[]> };
-
+export type ErrorResponse = { detail: string; code: string };
+export type ValidationErrorResponse = { message: string; errors: Record<string, string[]> };

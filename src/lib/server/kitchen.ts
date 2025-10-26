@@ -19,7 +19,8 @@ export class KitchenAPI extends BaseAPI {
 
 		return data.map((recipe: ServerRecipe) => ({
 			...recipe,
-			createdAt: new Date(recipe.created_at)
+			createdAt: new Date(recipe.created_at),
+			updatedAt: new Date(recipe.updated_at)
 		}));
 	}
 
@@ -34,7 +35,8 @@ export class KitchenAPI extends BaseAPI {
 
 		return {
 			...data,
-			createdAt: new Date(data.created_at)
+			createdAt: new Date(data.created_at),
+			updatedAt: new Date(data.updated_at)
 		};
 	}
 

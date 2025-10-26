@@ -1,8 +1,7 @@
 <script lang="ts">
-	import { Image } from '@unpic/svelte';
 	import Divider from '$lib/components/Divider.svelte';
 	import type { Recipe } from '$lib/types';
-	import { imgURL } from '$lib/utils';
+	import { CldImage } from 'svelte-cloudinary';
 
 	const { recipe }: { recipe: Recipe } = $props();
 </script>
@@ -17,7 +16,7 @@
 			{recipe?.description}
 		</p>
 		{#if recipe?.image}
-			<Image src={imgURL(recipe.image)} alt={recipe.title} class="h-auto w-full rounded-lg" />
+			<CldImage src={recipe.image} alt={recipe.title} height={600} width={800} class="rounded-lg" />
 		{/if}
 		{#if recipe?.notes}
 			<Divider text="Notes" />

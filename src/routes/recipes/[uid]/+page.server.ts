@@ -1,4 +1,4 @@
-import { type R2Object } from '@cloudflare/workers-types';
+import { ImagesAPI } from '$lib/images';
 import { superValidate, type SuperValidated } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import type { Ingredient, Recipe, Unit, User } from '$lib/types';
@@ -81,7 +81,9 @@ export const load: PageServerLoad = async ({ cookies, params, parent }): Promise
 
 export const actions: Actions = {
 	saveRecipe: async (event) => {
-		const kitchenAPI = new KitchenAPI(event.cookies, event.fetch);
+		const kitchenApi = new KitchenAPI(event.cookies, event.fetch);
+		const imagesApi = new ImagesAPI();
+
 		const form = await superValidate(event, zod4(recipeSchema));
 		if (!form.valid) {
 			console.error(form.errors);
@@ -90,37 +92,28 @@ export const actions: Actions = {
 			});
 		}
 
-		let r2Response: R2Object | null;
-		if (event.platform && event.platform.env.IMAGES && form.data.newImage) {
-			const fileData = await form.data.newImage.arrayBuffer();
-			try {
-				r2Response = await event.platform.env.IMAGES.put(form.data.newImage.name, fileData);
-			} catch (e) {
-				console.error(e);
-				return fail(500, { form });
-			}
-			if (form.data.image) {
-				try {
-					await event.platform.env.IMAGES.delete(form.data.image);
-				} catch (e) {
-					console.warn('Failed to delete old image', e);
-				}
-			}
-			form.data.image = r2Response?.key;
-		}
-
 		let recipeUid = event.params.uid;
-		if (event.params.uid === 'new') {
+		if (!recipeUid) return fail(400, { error: 'Recipe UID is required' });
+
+		if (recipeUid === 'new') {
 			try {
-				recipeUid = await kitchenAPI.CreateRecipe(form.data);
+				if (form.data.newImage) {
+					form.data.image = await imagesApi.create(form.data.newImage);
+				}
+				recipeUid = await kitchenApi.CreateRecipe(form.data);
 			} catch (e) {
 				console.error(e);
 				return fail(500, { form });
 			}
-		} else if (event.params.uid) {
-			recipeUid = event.params.uid;
+		} else {
 			try {
-				await kitchenAPI.UpdateRecipe(recipeUid, form.data);
+				if (form.data.newImage) {
+					if (form.data.image) {
+						await imagesApi.delete(form.data.image);
+					}
+					form.data.image = await imagesApi.create(form.data.newImage);
+				}
+				await kitchenApi.UpdateRecipe(recipeUid, form.data);
 			} catch (e) {
 				console.error(e);
 				return fail(500, { form });
@@ -133,9 +126,16 @@ export const actions: Actions = {
 		if (!recipeUid) {
 			return fail(400, { error: 'Recipe UID is required' });
 		}
+
+		const kitchenApi = new KitchenAPI(event.cookies, event.fetch);
+		const imagesApi = new ImagesAPI();
+
 		try {
-			const kitchenAPI = new KitchenAPI(event.cookies, event.fetch);
-			await kitchenAPI.DeleteRecipe(recipeUid);
+			const recipe = await kitchenApi.GetRecipe(recipeUid);
+			if (recipe.image) {
+				await imagesApi.delete(recipe.image);
+			}
+			await kitchenApi.DeleteRecipe(recipeUid);
 		} catch (e) {
 			console.error(e);
 			return fail(500, { error: 'Failed to delete recipe' });

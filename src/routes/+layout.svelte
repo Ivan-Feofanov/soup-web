@@ -1,7 +1,11 @@
 <script lang="ts">
 	import '../app.css';
 	import { ModeWatcher, toggleMode } from 'mode-watcher';
-	import { User, LogIn, LogOut, Sun, MoonStar } from '@lucide/svelte';
+	import User from '@lucide/svelte/icons/user';
+	import LogIn from '@lucide/svelte/icons/log-in';
+	import LogOut from '@lucide/svelte/icons/log-out';
+	import Sun from '@lucide/svelte/icons/sun';
+	import MoonStar from '@lucide/svelte/icons/moon-star';
 	import { Button } from '$lib/components/ui/button/index.js';
 
 	import { resolve } from '$app/paths';

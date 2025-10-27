@@ -7,7 +7,12 @@
 		overrideItemIdKeyNameBeforeInitialisingDndZones
 	} from 'svelte-dnd-action';
 	import { flip } from 'svelte/animate';
-	import { Plus, CircleX, Check, ChevronsUpDown, GripVertical, ImageUp } from '@lucide/svelte';
+	import Plus from '@lucide/svelte/icons/plus';
+	import CircleX from '@lucide/svelte/icons/circle-x';
+	import Check from '@lucide/svelte/icons/check';
+	import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
+	import GripVertical from '@lucide/svelte/icons/grip-vertical';
+	import ImageUp from '@lucide/svelte/icons/image-up';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import * as Form from '$lib/components/ui/form';
 	import * as Field from '$lib/components/ui/field';
@@ -26,7 +31,7 @@
 	import { superForm, fileProxy } from 'sveltekit-superforms';
 	import type { PageData } from './$types';
 	import { Image } from '@unpic/svelte';
-	import { CldImage } from 'svelte-cloudinary';
+	import { buildCloudinaryUrl } from '$lib/cloudinary';
 
 	let { data, edit = $bindable() }: { data: PageData; edit?: boolean } = $props();
 	let {
@@ -320,11 +325,11 @@
 								class="mx-auto max-h-80 w-auto rounded-md transition-all duration-300 group-hover:blur-xs"
 							/>
 						{:else}
-							<CldImage
-								src={$formValues.image || ''}
+							<Image
+								src={buildCloudinaryUrl($formValues.image || '', { width: 800, height: 600 })}
 								alt={$formValues.title}
-								height={600}
 								width={800}
+								height={600}
 								class="mx-auto max-h-80 w-auto rounded-md transition-all duration-300 group-hover:blur-xs"
 							/>
 						{/if}

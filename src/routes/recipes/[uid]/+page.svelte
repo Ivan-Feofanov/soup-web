@@ -1,7 +1,9 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
 	import { resolve } from '$app/paths';
-	import { CircleChevronLeft, FilePenLine, Trash2 } from '@lucide/svelte';
+	import CircleChevronLeft from '@lucide/svelte/icons/circle-chevron-left';
+	import FilePenLine from '@lucide/svelte/icons/file-pen-line';
+	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import EditRecipe from './EditRecipe.svelte';
 	import RecipeDetails from './RecipeDetails.svelte';
 	import { Button } from '$lib/components/ui/button';

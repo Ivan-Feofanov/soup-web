@@ -1,7 +1,8 @@
 <script lang="ts">
 	import Divider from '$lib/components/Divider.svelte';
 	import type { Recipe } from '$lib/types';
-	import { CldImage } from 'svelte-cloudinary';
+	import { Image } from '@unpic/svelte';
+	import { buildCloudinaryUrl } from '$lib/cloudinary';
 
 	const { recipe }: { recipe: Recipe } = $props();
 </script>
@@ -16,7 +17,13 @@
 			{recipe?.description}
 		</p>
 		{#if recipe?.image}
-			<CldImage src={recipe.image} alt={recipe.title} height={600} width={800} class="rounded-lg" />
+			<Image
+				src={buildCloudinaryUrl(recipe.image, { width: 800, height: 600 })}
+				alt={recipe.title}
+				width={800}
+				height={600}
+				class="rounded-lg"
+			/>
 		{/if}
 		{#if recipe?.notes}
 			<Divider text="Notes" />

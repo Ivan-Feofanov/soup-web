@@ -1,4 +1,4 @@
-import { ImagesAPI } from '$lib/images';
+import { ImagesAPI } from '$lib/server/images';
 import { superValidate, type SuperValidated } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import type { Ingredient, Recipe, Unit, User } from '$lib/types';

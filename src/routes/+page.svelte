@@ -2,7 +2,8 @@
 	import { resolve } from '$app/paths';
 	import type { PageData } from './$types';
 	import { Button } from '$lib/components/ui/button';
-	import { CldImage } from 'svelte-cloudinary';
+	import { Image } from '@unpic/svelte';
+	import { buildCloudinaryUrl } from '$lib/cloudinary';
 	import { format } from 'date-fns';
 
 	export let data: PageData;
@@ -32,12 +33,11 @@
 						</div>
 						<div class="flex-none">
 							{#if r.image}
-								<CldImage
-									src={r.image}
+								<Image
+									src={buildCloudinaryUrl(r.image, { width: 100, height: 100, crop: 'thumb' })}
 									alt={r.title}
 									width={100}
 									height={100}
-									crop="thumb"
 									class="rounded-lg"
 								/>
 							{/if}

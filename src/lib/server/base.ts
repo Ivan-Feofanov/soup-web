@@ -79,6 +79,13 @@ export class BaseAPI {
 	 * Forward Set-Cookie headers from backend response to the browser
 	 * This is necessary because SvelteKit's server-side fetch doesn't automatically
 	 * forward cookies to the client
+	 *
+	 * NOTE: SvelteKit's cookies.set() strips the domain attribute, so cookies
+	 * will only be set for the exact domain (soup.feofanov.dev) and won't work
+	 * for cross-subdomain authentication (soup-api.feofanov.dev).
+	 *
+	 * For cross-subdomain cookies, the backend must set them directly in the browser
+	 * response, not through SvelteKit's server-side proxy.
 	 */
 	protected forwardCookies(response: Response) {
 		const setCookieHeaders = response.headers.get('set-cookie');
@@ -139,12 +146,8 @@ export class BaseAPI {
 							options.sameSite = sameSite;
 						}
 					} else if (key === 'domain' && val) {
-						// Preserve domain attribute from backend for cross-domain cookie sharing
-						console.log('SETTING COOKIE DOMAIN==========================================');
-						console.log(val);
-						console.log(options);
-						console.log(options.domain);
-						console.log('SETTING COOKIE DOMAIN==========================================');
+						// NOTE: SvelteKit strips the domain attribute, so this won't work
+						// for cross-subdomain cookies
 						options.domain = val;
 					}
 				});

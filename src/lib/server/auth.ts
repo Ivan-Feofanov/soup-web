@@ -1,7 +1,7 @@
 import type { Cookies } from '@sveltejs/kit';
 import { BaseAPI, type Fetch } from '$lib/server/base';
 import { AUTH_REDIRECT_URL } from '$env/static/private';
-import type { User } from '$lib/types';
+import type { AuthResponse, User } from '$lib/types';
 
 export class AuthAPI extends BaseAPI {
 	constructor(cookies: Cookies, fetch: Fetch) {
@@ -21,10 +21,9 @@ export class AuthAPI extends BaseAPI {
 			throw new Error(`Failed to login: ${errorData}`);
 		}
 
-		// Forward Set-Cookie headers from backend to browser
-		this.forwardCookies(response);
+		const data: AuthResponse = await response.json();
+		this.setTokens(data);
 
-		const data = await response.json();
 		return data.user;
 	}
 
@@ -36,8 +35,10 @@ export class AuthAPI extends BaseAPI {
 			throw new Error('Failed to logout');
 		}
 
-		// Forward Set-Cookie headers (to clear session cookie)
-		this.forwardCookies(response);
+		// Clear tokens from cookies
+		this.cookies.delete('access_token', { path: '/' });
+		this.cookies.delete('refresh_token', { path: '/' });
+
 		return;
 	}
 }

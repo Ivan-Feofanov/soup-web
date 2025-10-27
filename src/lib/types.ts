@@ -69,6 +69,12 @@ export type ServerRecipe = {
 	instructions?: string[];
 };
 
+export type AuthResponse = {
+	user: User;
+	access_token: string;
+	refresh_token: string;
+};
+
 export type ErrorResponse = { detail: string; code: string };
 export type ValidationErrorResponse = { message: string; errors: Record<string, string[]> };
 

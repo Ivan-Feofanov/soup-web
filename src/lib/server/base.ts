@@ -1,17 +1,8 @@
 import type { Cookies } from '@sveltejs/kit';
-import type { ErrorResponse, ValidationErrorResponse } from '$lib/types';
+import type { AuthResponse, ErrorResponse, ValidationErrorResponse } from '$lib/types';
 import { API_URL } from '$env/static/private';
 
 export type Fetch = typeof fetch;
-
-type CookieOptions = {
-	path: string;
-	maxAge?: number;
-	httpOnly?: boolean;
-	secure?: boolean;
-	sameSite?: 'strict' | 'lax' | 'none';
-	domain?: string;
-};
 
 export class ValidationError implements Error {
 	constructor(message: string, errors: Record<string, string[]>) {
@@ -28,7 +19,7 @@ export class ValidationError implements Error {
 export class BaseAPI {
 	baseUrl: string = `${API_URL}/api`;
 	serverUrl: string = API_URL;
-	private readonly cookies: Cookies;
+	protected readonly cookies: Cookies;
 	private readonly fetch: Fetch;
 	private headers: Record<string, string> = {
 		'Content-Type': 'application/json'
@@ -39,22 +30,60 @@ export class BaseAPI {
 		this.fetch = fetch;
 	}
 
+	/**
+	 * Get access token from cookie
+	 * Server-side we store the access token in a cookie for SSR
+	 */
+	protected getAccessToken(): string | null {
+		return this.cookies.get('access_token') || null;
+	}
+
+	/**
+	 * Store tokens in cookies
+	 */
+	protected setTokens(data: AuthResponse) {
+		// Store JWT tokens in cookies
+		this.cookies.set('access_token', data.access_token, {
+			path: '/',
+			httpOnly: true,
+			secure: true,
+			sameSite: 'lax',
+			maxAge: 60 * 15 // 15 minutes for access token
+		});
+
+		this.cookies.set('refresh_token', data.refresh_token, {
+			path: '/',
+			httpOnly: true,
+			secure: true,
+			sameSite: 'lax',
+			maxAge: 60 * 60 * 24 * 7 // 7 days for refresh token
+		});
+	}
+
+	/**
+	 * Clear tokens from cookies
+	 */
+	protected clearTokens() {
+		this.cookies.delete('access_token', { path: '/' });
+		this.cookies.delete('refresh_token', { path: '/' });
+	}
+
+	/**
+	 * Set Authorization header with access token
+	 */
+	private setAuthHeader(headers: Record<string, string>) {
+		const token = this.getAccessToken();
+		if (token) {
+			headers['Authorization'] = `Bearer ${token}`;
+		}
+	}
+
 	private async request(
 		method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
 		url: string,
 		body: Record<string, unknown> | null = null
 	): Promise<Response> {
-		const options: RequestInit = {
-			method,
-			headers: this.headers,
-			credentials: 'include' // Important: include cookies in requests
-		};
-
-		if (body) {
-			options.body = JSON.stringify(body);
-		}
-
-		const response = await this.fetch(`${this.baseUrl}${url}`, options);
+		const response = await this.requestWithAuth(method, `${this.baseUrl}${url}`, body);
 
 		if (!response.ok) {
 			let responseData: ErrorResponse;
@@ -76,93 +105,79 @@ export class BaseAPI {
 	}
 
 	/**
-	 * Forward Set-Cookie headers from backend response to the browser
-	 * This is necessary because SvelteKit's server-side fetch doesn't automatically
-	 * forward cookies to the client
-	 *
-	 * NOTE: SvelteKit's cookies.set() strips the domain attribute, so cookies
-	 * will only be set for the exact domain (soup.feofanov.dev) and won't work
-	 * for cross-subdomain authentication (soup-api.feofanov.dev).
-	 *
-	 * For cross-subdomain cookies, the backend must set them directly in the browser
-	 * response, not through SvelteKit's server-side proxy.
+	 * Refresh the access token using the refresh token
+	 * This is called automatically when a request returns 401
 	 */
-	protected forwardCookies(response: Response) {
-		const setCookieHeaders = response.headers.get('set-cookie');
-		if (!setCookieHeaders) return;
-
-		// Split multiple Set-Cookie headers (they may be separated by commas or newlines)
-		// Note: This is tricky because cookie values can contain commas
-		const cookieStrings = setCookieHeaders.split(/,(?=\s*\w+=)/);
-
-		cookieStrings.forEach((cookieString) => {
-			try {
-				// Parse cookie string: "name=value; Path=/; HttpOnly; etc"
-				const parts = cookieString.split(';').map((s) => s.trim());
-				const [nameValue, ...attributes] = parts;
-
-				if (!nameValue || !nameValue.includes('=')) return;
-
-				const equalIndex = nameValue.indexOf('=');
-				const name = nameValue.substring(0, equalIndex).trim();
-				const value = nameValue.substring(equalIndex + 1).trim();
-
-				// Parse cookie attributes
-				const options: CookieOptions = { path: '/' };
-
-				attributes.forEach((attr) => {
-					if (!attr) return;
-
-					const attrEqualIndex = attr.indexOf('=');
-					let key: string;
-					let val: string | undefined;
-
-					if (attrEqualIndex === -1) {
-						// Boolean attribute (e.g., HttpOnly, Secure)
-						key = attr.toLowerCase();
-					} else {
-						key = attr.substring(0, attrEqualIndex).trim().toLowerCase();
-						val = attr.substring(attrEqualIndex + 1).trim();
-					}
-
-					if (key === 'path' && val) {
-						options.path = val;
-					} else if (key === 'max-age' && val) {
-						const maxAge = parseInt(val, 10);
-						if (!isNaN(maxAge)) {
-							options.maxAge = maxAge;
-						}
-					} else if (key === 'expires' && val) {
-						// Skip expires - use max-age instead if available
-						// The cookie library is very strict about date formats
-						// and max-age is preferred anyway
-					} else if (key === 'httponly') {
-						options.httpOnly = true;
-					} else if (key === 'secure') {
-						options.secure = true;
-					} else if (key === 'samesite' && val) {
-						const sameSite = val.toLowerCase();
-						if (sameSite === 'strict' || sameSite === 'lax' || sameSite === 'none') {
-							options.sameSite = sameSite;
-						}
-					} else if (key === 'domain' && val) {
-						// NOTE: SvelteKit strips the domain attribute, so this won't work
-						// for cross-subdomain cookies
-						options.domain = val;
-					}
-				});
-
-				this.cookies.set(name, value, options);
-			} catch (error) {
-				console.error('Failed to parse cookie:', cookieString, error);
+	private async refreshAccessToken(): Promise<boolean> {
+		try {
+			const refreshToken = this.cookies.get('refresh_token');
+			if (!refreshToken) {
+				return false;
 			}
-		});
+
+			const response = await this.fetch(`${this.baseUrl}/auth/refresh/`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ refresh_token: refreshToken })
+			});
+
+			if (!response.ok) {
+				// Refresh token is invalid or expired
+				this.clearTokens();
+				return false;
+			}
+
+			const data: AuthResponse = await response.json();
+			this.setTokens(data);
+
+			return true;
+		} catch (error) {
+			console.error('Token refresh failed:', error);
+			return false;
+		}
 	}
 
 	protected isAuthenticated() {
-		// Check for session cookie (name depends on your backend configuration)
-		// Common names: 'sessionid', 'session', 'connect.sid'
-		return !!this.cookies.get('sessionid');
+		// Check for access token
+		return !!this.getAccessToken();
+	}
+
+	/**
+	 * Make an HTTP request with automatic token refresh on 401
+	 */
+	private async requestWithAuth(
+		method: string,
+		url: string,
+		body: Record<string, unknown> | null,
+		retryCount = 0
+	): Promise<Response> {
+		const headers = { ...this.headers };
+		this.setAuthHeader(headers);
+
+		const options: RequestInit = {
+			method,
+			headers,
+			credentials: 'include'
+		};
+
+		if (body) {
+			options.body = JSON.stringify(body);
+		}
+
+		const response = await this.fetch(url, options);
+
+		// If we get 401 and haven't retried yet, try to refresh the token
+		if (response.status === 401 && retryCount === 0) {
+			const refreshed = await this.refreshAccessToken();
+			if (refreshed) {
+				// Retry the request with the new token
+				return this.requestWithAuth(method, url, body, retryCount + 1);
+			}
+		}
+
+		return response;
 	}
 
 	async GET(url: string) {

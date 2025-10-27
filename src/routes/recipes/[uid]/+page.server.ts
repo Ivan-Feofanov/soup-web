@@ -55,6 +55,7 @@ export const load: PageServerLoad = async ({ cookies, params, parent }): Promise
 			notes: recipe.notes,
 			image: recipe.image,
 			instructions: recipe.instructions,
+			visibility: recipe.visibility,
 			ingredients:
 				recipe.ingredients?.map((i) => ({
 					ingredient_uid: i.ingredient.uid,

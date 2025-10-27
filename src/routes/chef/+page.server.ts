@@ -2,6 +2,7 @@ import type { Actions } from './$types';
 import { fail, redirect } from '@sveltejs/kit';
 import { ValidationError } from '$lib/server/base';
 import { UserAPI } from '$lib/server/user';
+import { AuthAPI } from '$lib/server/auth';
 
 export const actions = {
 	update: async ({ cookies, request, fetch }) => {
@@ -29,9 +30,15 @@ export const actions = {
 		return { success: true };
 	},
 
-	logout: async ({ cookies }) => {
-		cookies.delete('access_token', { path: '/' });
-		cookies.delete('refresh_token', { path: '/' });
+	logout: async ({ cookies, fetch }) => {
+		const authAPI = new AuthAPI(cookies, fetch);
+		try {
+			// Call backend logout endpoint to clear session
+			await authAPI.Logout();
+		} catch (error) {
+			console.error('Logout error:', error);
+			// Continue with redirect even if backend logout fails
+		}
 		redirect(303, '/')
 	}
 } satisfies Actions;

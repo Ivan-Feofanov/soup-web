@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Ingredient, Instruction, Unit } from '$lib/types';
+	import { type Ingredient, type Instruction, RecipeVisibility, type Unit } from '$lib/types';
 	import Spinner from '$lib/assets/spinner.svelte';
 	import {
 		type DndEvent,
@@ -17,6 +17,7 @@
 	import * as Command from '$lib/components/ui/command';
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import { Input } from '$lib/components/ui/input';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { tick } from 'svelte';
@@ -233,7 +234,29 @@
 	<span class="absolute -top-6.5 bg-background p-2 text-2xl"
 		>{$formValues.title || 'New Recipe'}</span
 	>
-
+	<!-- Visibility -->
+	<Form.Field {form} name="visibility">
+		<Form.Control>
+			{#snippet children({ props })}
+				<Form.Label>Visibility</Form.Label>
+				<ToggleGroup.Root
+					{...props}
+					type="single"
+					variant="outline"
+					class="w-full"
+					bind:value={$formValues.visibility}
+				>
+					<ToggleGroup.Item value={RecipeVisibility.Private} aria-label="Toggle private"
+						>Private</ToggleGroup.Item
+					>
+					<ToggleGroup.Item value={RecipeVisibility.Public} aria-label="Toggle public"
+						>Public</ToggleGroup.Item
+					>
+				</ToggleGroup.Root>
+			{/snippet}
+		</Form.Control>
+		<Form.FieldErrors />
+	</Form.Field>
 	<!-- Title -->
 	<Form.Field {form} name="title">
 		<Form.Control>

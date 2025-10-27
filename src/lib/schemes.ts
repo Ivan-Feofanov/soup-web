@@ -1,4 +1,5 @@
 import { z } from 'zod/v4';
+import { RecipeVisibility } from '$lib/types';
 
 const IngredientInRecipe = z.object({
 	ingredient_uid: z.uuid(),
@@ -16,6 +17,7 @@ const Instruction = z.object({
 export type InstructionSchema = z.infer<typeof Instruction>;
 
 export const recipeSchema = z.object({
+	visibility: z.enum(RecipeVisibility).default(RecipeVisibility.Private),
 	title: z
 		.string()
 		.min(1, 'Title is required')

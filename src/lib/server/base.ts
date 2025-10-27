@@ -140,6 +140,11 @@ export class BaseAPI {
 						}
 					} else if (key === 'domain' && val) {
 						// Preserve domain attribute from backend for cross-domain cookie sharing
+						console.log('SETTING COOKIE DOMAIN==========================================');
+						console.log(val);
+						console.log(options);
+						console.log(options.domain);
+						console.log('SETTING COOKIE DOMAIN==========================================');
 						options.domain = val;
 					}
 				});

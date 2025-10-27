@@ -44,7 +44,7 @@
    * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
    */
    "vars": {
-     "VITE_CLOUDINARY_CLOUD_NAME": "doqw13qop"
+     "PUBLIC_CLOUDINARY_CLOUD_NAME": "doqw13qop"
    }
 	/**
    * Note: Use secrets to store sensitive data.

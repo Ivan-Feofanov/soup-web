@@ -139,7 +139,8 @@ export class BaseAPI {
 							options.sameSite = sameSite;
 						}
 					} else if (key === 'domain' && val) {
-						// Skip domain - let SvelteKit handle it
+						// Preserve domain attribute from backend for cross-domain cookie sharing
+						options.domain = val;
 					}
 				});
 

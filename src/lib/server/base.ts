@@ -27,7 +27,8 @@ export class BaseAPI {
 
 	constructor(cookies: Cookies, fetch: Fetch) {
 		this.cookies = cookies;
-		this.fetch = fetch;
+		// Bind fetch to preserve context in Cloudflare Workers
+		this.fetch = fetch.bind(globalThis);
 	}
 
 	/**

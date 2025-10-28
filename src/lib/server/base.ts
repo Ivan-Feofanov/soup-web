@@ -18,8 +18,8 @@ export class ValidationError implements Error {
 }
 
 export class BaseAPI {
-	baseUrl: string = `${API_URL}/api`;
-	serverUrl: string = API_URL;
+	baseUrl: string = '';
+	apiUrl: string = `${API_URL}/api`;
 	protected readonly cookies: Cookies;
 	private readonly fetch: Fetch;
 	private headers: Record<string, string> = {
@@ -34,11 +34,19 @@ export class BaseAPI {
 	}
 
 	/**
-	 * Get access token from cookie
+	 * Get access token from cookie and refresh if needed
 	 * Server-side we store the access token in a cookie for SSR
 	 */
-	protected getAccessToken(): string | null {
-		return this.cookies.get('access_token') || null;
+	protected async getAccessToken(): Promise<string | undefined> {
+		const accessToken = this.cookies.get('access_token');
+		if (accessToken) {
+			return accessToken;
+		}
+		const refreshed = await this.refreshAccessToken();
+		if (!refreshed) {
+			return;
+		}
+		return this.cookies.get('access_token');
 	}
 
 	/**
@@ -74,8 +82,8 @@ export class BaseAPI {
 	/**
 	 * Set Authorization header with access token
 	 */
-	private setAuthHeader(headers: Record<string, string>) {
-		const token = this.getAccessToken();
+	private async setAuthHeader(headers: Record<string, string>) {
+		const token = await this.getAccessToken();
 		if (token) {
 			headers['Authorization'] = `Bearer ${token}`;
 		}
@@ -106,7 +114,7 @@ export class BaseAPI {
 				return false;
 			}
 
-			const response = await this.fetch(`${this.baseUrl}/auth/refresh/`, {
+			const response = await this.fetch(`${this.apiUrl}/auth/token/refresh/`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'
@@ -132,7 +140,7 @@ export class BaseAPI {
 
 	protected isAuthenticated() {
 		// Check for access token
-		return !!this.getAccessToken();
+		return !!this.cookies.get('access_token') || !!this.cookies.get('refresh_token');
 	}
 
 	/**
@@ -145,7 +153,7 @@ export class BaseAPI {
 		retryCount = 0
 	): Promise<Response> {
 		const headers = { ...this.headers };
-		this.setAuthHeader(headers);
+		await this.setAuthHeader(headers);
 
 		const options: RequestInit = {
 			method,

@@ -6,7 +6,7 @@ import { HttpStatus } from '$lib/server/utils';
 export class KitchenAPI extends BaseAPI {
 	constructor(cookies: Cookies, fetch: Fetch) {
 		super(cookies, fetch);
-		this.baseUrl = `${this.serverUrl}/api/kitchen`;
+		this.baseUrl = `${this.apiUrl}/kitchen`;
 	}
 
 	async GetRecipes(): Promise<Recipe[]> {

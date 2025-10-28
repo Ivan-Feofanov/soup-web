@@ -6,7 +6,7 @@ import type { AuthResponse, User } from '$lib/types';
 export class AuthAPI extends BaseAPI {
 	constructor(cookies: Cookies, fetch: Fetch) {
 		super(cookies, fetch);
-		this.baseUrl = `${this.serverUrl}/api/auth`;
+		this.baseUrl = `${this.apiUrl}/auth`;
 	}
 
 	async Login(code: string): Promise<User> {

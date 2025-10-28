@@ -5,7 +5,7 @@ import type { User } from '$lib/types';
 export class UserAPI extends BaseAPI {
 	constructor(cookies: Cookies, fetch: Fetch) {
 		super(cookies, fetch);
-		this.baseUrl = `${this.serverUrl}/api/users`;
+		this.baseUrl = `${this.apiUrl}/users`;
 	}
 
 	async GetMe(): Promise<User | null> {

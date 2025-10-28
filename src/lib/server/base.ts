@@ -149,8 +149,7 @@ export class BaseAPI {
 
 		const options: RequestInit = {
 			method,
-			headers,
-			credentials: 'include'
+			headers
 		};
 
 		if (body) {
@@ -162,11 +161,14 @@ export class BaseAPI {
 		// If we get 401 or 403 and haven't retried yet, try to refresh the token
 		if (response.status === HttpStatus.UNAUTHORIZED || response.status === HttpStatus.FORBIDDEN) {
 			if (retryCount > this.maxRetries) {
+				console.error('Max retries reached, giving up');
 				await handleErrorResponse(response);
 			}
+			console.warn('Access token expired, refreshing token');
 			const refreshed = await this.refreshAccessToken();
 			if (refreshed) {
 				// Retry the request with the new token
+				console.log('Retrying request with new token');
 				return this.requestWithAuth(method, url, body, retryCount + 1);
 			}
 		}

@@ -372,6 +372,7 @@
 									<Textarea
 										{...props}
 										bind:value={instruction.description}
+										class="field-sizing-content resize-none"
 										aria-invalid={$errors.instructions && $errors.instructions[instruction.uid]
 											? 'true'
 											: undefined}
@@ -585,4 +586,5 @@
 		{/if}
 	</div>
 </form>
+
 <!--<SuperDebug data={{ $formValues, $errors }} />-->

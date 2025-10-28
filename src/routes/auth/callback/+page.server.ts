@@ -14,7 +14,6 @@ export const load: PageServerLoad = async ({ url, cookies, fetch }) => {
 	let user: User;
 
 	try {
-		// Backend will set session cookie in the response
 		user = await authAPI.Login(code);
 	} catch (error) {
 		console.error('Callback error:', error);

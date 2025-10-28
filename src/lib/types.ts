@@ -75,9 +75,6 @@ export type AuthResponse = {
 	refresh_token: string;
 };
 
-export type ErrorResponse = { detail: string; code: string };
-export type ValidationErrorResponse = { message: string; errors: Record<string, string[]> };
-
 export enum RecipeVisibility {
 	Public = 'PUBLIC',
 	Friends = 'FRIENDS',

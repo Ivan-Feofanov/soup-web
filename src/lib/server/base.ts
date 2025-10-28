@@ -1,6 +1,7 @@
 import type { Cookies } from '@sveltejs/kit';
-import type { AuthResponse, ErrorResponse, ValidationErrorResponse } from '$lib/types';
+import type { AuthResponse } from '$lib/types';
 import { API_URL } from '$env/static/private';
+import { handleErrorResponse, HttpStatus } from '$lib/server/utils';
 
 export type Fetch = typeof fetch;
 
@@ -24,6 +25,7 @@ export class BaseAPI {
 	private headers: Record<string, string> = {
 		'Content-Type': 'application/json'
 	};
+	private maxRetries = 3;
 
 	constructor(cookies: Cookies, fetch: Fetch) {
 		this.cookies = cookies;
@@ -87,19 +89,7 @@ export class BaseAPI {
 		const response = await this.requestWithAuth(method, `${this.baseUrl}${url}`, body);
 
 		if (!response.ok) {
-			let responseData: ErrorResponse;
-			try {
-				responseData = await response.json();
-				console.error('API request failed:', JSON.stringify(responseData, null, 2));
-			} catch (e) {
-				console.error('Failed to parse error response:', e);
-				throw new Error(`API request failed: ${response.statusText}`);
-			}
-			if (response.status === 400) {
-				const validationError: ValidationErrorResponse =
-					responseData as unknown as ValidationErrorResponse;
-				throw new ValidationError(validationError.message, validationError.errors);
-			}
+			await handleErrorResponse(response);
 		}
 
 		return response;
@@ -169,13 +159,20 @@ export class BaseAPI {
 
 		const response = await this.fetch(url, options);
 
-		// If we get 401 and haven't retried yet, try to refresh the token
-		if (response.status === 401 && retryCount === 0) {
+		// If we get 401 or 403 and haven't retried yet, try to refresh the token
+		if (response.status === HttpStatus.UNAUTHORIZED || response.status === HttpStatus.FORBIDDEN) {
+			if (retryCount > this.maxRetries) {
+				await handleErrorResponse(response);
+			}
 			const refreshed = await this.refreshAccessToken();
 			if (refreshed) {
 				// Retry the request with the new token
 				return this.requestWithAuth(method, url, body, retryCount + 1);
 			}
+		}
+
+		if (!response.ok) {
+			await handleErrorResponse(response);
 		}
 
 		return response;

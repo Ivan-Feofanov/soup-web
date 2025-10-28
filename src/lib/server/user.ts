@@ -8,21 +8,16 @@ export class UserAPI extends BaseAPI {
 		this.baseUrl = `${this.serverUrl}/api/users`;
 	}
 
-	async GetMe (): Promise<User | null> {
+	async GetMe(): Promise<User | null> {
 		if (!this.isAuthenticated()) {
 			return null;
 		}
 
 		const response = await this.GET('/me');
-		if (!response.ok) {
-			const errorData = await response.json();
-			console.error('Failed to fetch user:', errorData);
-			throw new Error(`Failed to fetch user: ${errorData}`);
-		}
 		return await response.json();
-	};
+	}
 
-	async UpdateUser (userUid: string, userData: { handler: string; username: string }) {
+	async UpdateUser(userUid: string, userData: { handler: string; username: string }) {
 		return this.PATCH(`/${userUid}`, userData);
-	};
+	}
 }

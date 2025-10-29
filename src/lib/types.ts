@@ -13,8 +13,8 @@ export type Ingredient = {
 export type IngredientInRecipe = {
 	uid: string;
 	ingredient: Ingredient;
-	unit: Unit;
-	quantity: number;
+	unit: Unit | null;
+	quantity: number | null;
 	notes?: string;
 };
 

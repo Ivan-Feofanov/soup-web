@@ -4,8 +4,8 @@ import { RecipeVisibility } from '$lib/types';
 const IngredientInRecipe = z
 	.object({
 		ingredient_uid: z.uuid(),
-		unit_uid: z.uuid().optional(),
-		quantity: z.number().optional(),
+		unit_uid: z.uuid().nullable().optional(),
+		quantity: z.number().nullable().optional(),
 		notes: z.string().optional()
 	})
 	.refine(

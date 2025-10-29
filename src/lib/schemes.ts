@@ -1,12 +1,22 @@
 import { z } from 'zod/v4';
 import { RecipeVisibility } from '$lib/types';
 
-const IngredientInRecipe = z.object({
-	ingredient_uid: z.uuid(),
-	unit_uid: z.uuid(),
-	quantity: z.number().optional(),
-	notes: z.string().optional()
-});
+const IngredientInRecipe = z
+	.object({
+		ingredient_uid: z.uuid(),
+		unit_uid: z.uuid().optional(),
+		quantity: z.number().optional(),
+		notes: z.string().optional()
+	})
+	.refine(
+		(data) => {
+			return !((data.quantity && !data.unit_uid) || (!data.quantity && data.unit_uid));
+		},
+		{
+			message: 'If quantity is provided, unit is required and vice versa.',
+			path: ['quantity', 'unit_uid'] // Specify the field associated with the error
+		}
+	);
 
 const Instruction = z.object({
 	uid: z.string(),

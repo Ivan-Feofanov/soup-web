@@ -13,7 +13,6 @@
 	import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
 	import GripVertical from '@lucide/svelte/icons/grip-vertical';
 	import ImageUp from '@lucide/svelte/icons/image-up';
-	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import * as Form from '$lib/components/ui/form';
 	import * as Field from '$lib/components/ui/field';
 	import * as Select from '$lib/components/ui/select';
@@ -23,6 +22,7 @@
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
+	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { tick } from 'svelte';
@@ -140,10 +140,10 @@
 	let ingredientSelectOpen = $state(false);
 	let ingredientSearch = $state('');
 	let triggerRef = $state<HTMLButtonElement>(null!);
-	let quantity = $state(0);
 	let selectedIngredients = $derived($formValues.ingredients || []);
 	let selectedIngredientUID = $state('');
-	let selectedUnitUID = $state('');
+	let quantity = $state<number | undefined>();
+	let selectedUnitUID = $state<string | undefined>();
 
 	const openIngredientAddForm = () => {
 		$ingredientFormValues.name = ingredientSearch;
@@ -157,21 +157,21 @@
 	);
 
 	const addIngredient = () => {
-		if (!selectedIngredientUID || !selectedUnitUID) {
+		if (!selectedIngredientUID) {
 			return;
 		}
 		$formValues.ingredients = [
 			...selectedIngredients,
 			{
 				ingredient_uid: selectedIngredientUID,
-				unit_uid: selectedUnitUID,
-				quantity: quantity
+				unit_uid: selectedUnitUID || undefined,
+				quantity: quantity || undefined
 			}
 		];
 		ingredientSearch = '';
 		selectedIngredientUID = '';
-		selectedUnitUID = '';
-		quantity = 0;
+		selectedUnitUID = undefined;
+		quantity = undefined;
 	};
 
 	const removeIngredient = (ingredientUID: string) => {
@@ -194,12 +194,25 @@
 		quantity?: string[] | { _errors?: string[] };
 	};
 
+	$effect(() => {
+		if (!quantity) {
+			selectedUnitUID = undefined;
+		}
+	});
+
+	const addIngDisabled = $derived<boolean>(
+		!selectedIngredientUID || !!(!quantity && selectedUnitUID) || !!(quantity && !selectedUnitUID)
+	);
+
 	// Units
 	let unitSelectOpen = $state(false);
 	let addUnitDialogOpen = $state(false);
-	const unitLabel = (unitUID: string): string => {
+	const unitLabel = (unitUID: string | undefined): string => {
+		if (!unitUID) {
+			return '';
+		}
 		const unit = unitsList.find((u) => u.uid === unitUID);
-		return unit ? unit.abbreviation || unit.name : 'Unknown Unit';
+		return unit ? unit.abbreviation || unit.name : '';
 	};
 	const closeUnitSelect = () => {
 		unitSelectOpen = false;
@@ -509,12 +522,17 @@
 					placeholder="Enter quantity"
 					type="number"
 					bind:value={quantity}
-					required
+					min="0"
 				/>
 			</Field.Field>
 			<Field.Field>
 				<Field.Label for="unit">Unit:</Field.Label>
-				<Select.Root type="single" bind:value={selectedUnitUID} bind:open={unitSelectOpen}>
+				<Select.Root
+					type="single"
+					bind:value={selectedUnitUID}
+					bind:open={unitSelectOpen}
+					disabled={!quantity}
+				>
 					<Select.Trigger id="unit">
 						{selectedUnitLabel}
 					</Select.Trigger>
@@ -562,7 +580,9 @@
 			</Field.Field>
 		</div>
 		<div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-			<Button onclick={() => addIngredient()} class="mt-2"><Plus />Add</Button>
+			<Button onclick={() => addIngredient()} class="mt-2" disabled={addIngDisabled}
+				><Plus />Add</Button
+			>
 		</div>
 		{#if $errors.ingredients}
 			<div class="text-sm text-destructive">

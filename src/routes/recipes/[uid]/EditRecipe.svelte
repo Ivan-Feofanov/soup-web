@@ -239,7 +239,9 @@
 		{/if}
 	{/if}
 {/snippet}
-
+<svelte:head>
+	<title>{(data.recipe && `Edit ${data.recipe.title}`) || 'New recipe'}</title>
+</svelte:head>
 <form
 	method="POST"
 	enctype="multipart/form-data"
@@ -249,9 +251,6 @@
 	class:pointer-events-none={$submitting}
 	use:enhance
 >
-	<span class="absolute -top-6.5 bg-background p-2 text-2xl"
-		>{$formValues.title || 'New Recipe'}</span
-	>
 	<!-- Visibility -->
 	<Form.Field {form} name="visibility">
 		<Form.Control>

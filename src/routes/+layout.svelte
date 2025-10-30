@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import { ModeWatcher, toggleMode } from 'mode-watcher';
+	import { deepMerge, MetaTags } from 'svelte-meta-tags';
 	import User from '@lucide/svelte/icons/user';
 	import LogIn from '@lucide/svelte/icons/log-in';
 	import LogOut from '@lucide/svelte/icons/log-out';
@@ -11,7 +12,10 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
+
 	let { children, data } = $props();
+
+	let metaTags = $derived(deepMerge(data.baseMetaTags, page.data.pageMetaTags));
 
 	$effect(() => {
 		if (
@@ -24,11 +28,10 @@
 	});
 </script>
 
-<svelte:head>
-	<title>My Father's Soup</title>
-	<meta name="description" content="Probably the best community cookbook ever!" />
-</svelte:head>
 <ModeWatcher defaultMode="system" />
+
+<MetaTags {...metaTags} />
+
 <!-- Navbar -->
 <nav
 	class="border-base-content/10 sticky top-0 z-10 flex w-full items-center justify-between gap-2.5 border-b bg-primary-foreground p-2"

@@ -13,8 +13,11 @@ import {
 	type UnitSchema
 } from '$lib/schemes';
 import { KitchenAPI } from '$lib/server/kitchen';
+import { definePageMetaTags, type MetaTagsProps } from 'svelte-meta-tags';
+import { getMetaDataFromRecipe } from '$lib/metadata';
 
 interface PageData {
+	pageMetaTags: Readonly<MetaTagsProps>;
 	user: User | null;
 	recipe: Recipe | null;
 	ingredients: Ingredient[];
@@ -33,6 +36,10 @@ export const load: PageServerLoad = async ({ cookies, params, parent }): Promise
 	if (params.uid === 'new') {
 		try {
 			return {
+				pageMetaTags: definePageMetaTags({
+					title: 'New Recipe',
+					description: 'Create a new recipe'
+				}).pageMetaTags,
 				user,
 				recipe: null,
 				ingredients,
@@ -66,6 +73,7 @@ export const load: PageServerLoad = async ({ cookies, params, parent }): Promise
 		};
 		const form = await superValidate(recipeFormData, zod4(recipeSchema));
 		return {
+			...getMetaDataFromRecipe(recipe),
 			user,
 			recipe,
 			ingredients,

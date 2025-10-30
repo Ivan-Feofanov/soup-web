@@ -11,9 +11,9 @@ export const getMetaDataFromRecipe = (recipe: Recipe) => {
 			description: recipe.description,
 			images: [
 				{
-					url: buildCloudinaryUrl(recipe.image || '', { width: 800, height: 600 }),
-					width: 800,
-					height: 600,
+					url: buildCloudinaryUrl(recipe.image || '', { width: 1200, height: 630 }),
+					width: 1200,
+					height: 630,
 					alt: recipe.title
 				}
 			]
@@ -21,7 +21,7 @@ export const getMetaDataFromRecipe = (recipe: Recipe) => {
 		twitter: {
 			title: recipe.title,
 			description: recipe.description,
-			image: buildCloudinaryUrl(recipe.image || '', { width: 800, height: 600 }),
+			image: buildCloudinaryUrl(recipe.image || '', { width: 1200, height: 630 }),
 			imageAlt: recipe.title
 		}
 	});

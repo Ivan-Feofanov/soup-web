@@ -6,6 +6,19 @@ import { PUBLIC_CLOUDINARY_CLOUD_NAME } from '$env/static/public';
  * @param options - Optional transformations
  * @returns Full Cloudinary URL
  */
+
+const watermarkOptions = {
+	overlay: 'logo_classic_watermark',
+	crop: 'scale',
+	width: 200,
+	effect: 'mask',
+	gravity: 'south_east',
+	x: 10,
+	y: 10,
+	angle: -15,
+	opacity: 50
+};
+
 export function buildCloudinaryUrl(
 	publicId: string,
 	options?: {
@@ -14,6 +27,7 @@ export function buildCloudinaryUrl(
 		crop?: string;
 		quality?: string | number;
 		format?: string;
+		watermark?: boolean;
 	}
 ): string {
 	const cloudName = PUBLIC_CLOUDINARY_CLOUD_NAME;
@@ -28,6 +42,10 @@ export function buildCloudinaryUrl(
 	if (options?.quality) transformations.push(`q_${options.quality}`);
 	if (options?.format) transformations.push(`f_${options.format}`);
 
+	if (options?.watermark) {
+		const wmString = `c_fill,h_312,w_820/l_${watermarkOptions.overlay}/c_${watermarkOptions.crop},w_${watermarkOptions.width}/e_${watermarkOptions.effect},fl_layer_apply,g_${watermarkOptions.gravity},x_${watermarkOptions.x},y_${watermarkOptions.y},a_${watermarkOptions.angle},o_${watermarkOptions.opacity}`;
+		transformations.push(wmString);
+	}
 	const transformString = transformations.length > 0 ? transformations.join(',') + '/' : '';
 
 	return `${baseUrl}/${transformString}${publicId}`;

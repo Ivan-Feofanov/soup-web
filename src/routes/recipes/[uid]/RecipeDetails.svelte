@@ -18,7 +18,7 @@
 		</p>
 		{#if recipe?.image}
 			<Image
-				src={buildCloudinaryUrl(recipe.image, { width: 800, height: 600 })}
+				src={buildCloudinaryUrl(recipe.image, { width: 800, height: 600, watermark: true })}
 				alt={recipe.title}
 				width={800}
 				height={600}

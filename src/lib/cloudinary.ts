@@ -43,7 +43,7 @@ export function buildCloudinaryUrl(
 	if (options?.format) transformations.push(`f_${options.format}`);
 
 	if (options?.watermark) {
-		const wmString = `c_fill,h_312,w_820/l_${watermarkOptions.overlay}/c_${watermarkOptions.crop},w_${watermarkOptions.width}/e_${watermarkOptions.effect},fl_layer_apply,g_${watermarkOptions.gravity},x_${watermarkOptions.x},y_${watermarkOptions.y},a_${watermarkOptions.angle},o_${watermarkOptions.opacity}`;
+		const wmString = `c_${options.crop || 'fill'}/l_${watermarkOptions.overlay}/c_${watermarkOptions.crop},w_${watermarkOptions.width}/e_${watermarkOptions.effect},fl_layer_apply,g_${watermarkOptions.gravity},x_${watermarkOptions.x},y_${watermarkOptions.y},a_${watermarkOptions.angle},o_${watermarkOptions.opacity}`;
 		transformations.push(wmString);
 	}
 	const transformString = transformations.length > 0 ? transformations.join(',') + '/' : '';

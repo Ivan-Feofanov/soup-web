@@ -2,6 +2,7 @@
 	import Divider from '$lib/components/Divider.svelte';
 	import type { Recipe } from '$lib/types';
 	import { Image } from '@unpic/svelte';
+	import * as Item from '$lib/components/ui/item';
 	import { buildCloudinaryUrl } from '$lib/cloudinary';
 
 	const { recipe }: { recipe: Recipe } = $props();
@@ -67,15 +68,20 @@
 
 	<section>
 		<Divider text="Instructions" />
-		<ul
-			class="mt-2 list-inside list-decimal space-y-2 marker:text-stone-600 dark:marker:text-stone-200"
-		>
+		<Item.Group class="mt-2 flex flex-col gap-3">
 			{#each recipe?.instructions ?? [] as instruction (instruction.uid)}
-				<li class="gap-2">
-					<span class=" text-stone-600 dark:text-stone-200">{instruction.description}</span>
-				</li>
+				<Item.Root variant="outline">
+					<Item.Media variant="icon">
+						<span class="text-lg">{instruction.step}</span>
+					</Item.Media>
+					<Item.Content>
+						<Item.Description class="line-clamp-none whitespace-pre-line"
+							>{instruction.description}</Item.Description
+						>
+					</Item.Content>
+				</Item.Root>
 			{/each}
-		</ul>
+		</Item.Group>
 	</section>
 
 	{#if recipe?.author}

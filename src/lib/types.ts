@@ -75,6 +75,11 @@ export type AuthResponse = {
 	refresh_token: string;
 };
 
+export type ErrorResponse = {
+	message: string;
+	errors: Record<string, string[]>;
+};
+
 export enum RecipeVisibility {
 	Public = 'PUBLIC',
 	Friends = 'FRIENDS',

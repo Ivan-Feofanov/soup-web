@@ -58,9 +58,9 @@ export const unitSchema = z.object({
 });
 export type UnitSchema = z.infer<typeof unitSchema>;
 
-export const fileSchema = z.object({
-	file: z
-		.instanceof(File, { message: 'Please upload a file.' })
-		.refine((f) => f.size < 10_000_000, 'Max 10 MB upload size.')
+export const userSchema = z.object({
+	uid: z.string(),
+	handler: z.string().min(1, 'Handler is required'),
+	username: z.string().min(1, 'Username is required'),
+	firstTime: z.coerce.boolean()
 });
-export type FileSchema = z.infer<typeof fileSchema>;

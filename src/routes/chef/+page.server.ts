@@ -3,31 +3,46 @@ import { fail, redirect } from '@sveltejs/kit';
 import { ValidationError } from '$lib/server/base';
 import { UserAPI } from '$lib/server/user';
 import { AuthAPI } from '$lib/server/auth';
+import { setError, superValidate } from 'sveltekit-superforms';
+import { zod4 } from 'sveltekit-superforms/adapters';
+import { userSchema } from '$lib/schemes';
+
+export const load = async ({ parent }) => {
+	const { user } = await parent();
+	const firstTime = !user?.handler && !user?.username;
+	const form = await superValidate({ firstTime, ...user }, zod4(userSchema), { errors: false });
+	return { form };
+};
 
 export const actions = {
 	update: async ({ cookies, request, fetch }) => {
-		const formData = await request.formData();
-		const uid = formData.get('uid');
-		const firstTime = formData.get('firstTime');
-		const handler = formData.get('handler');
-		const username = formData.get('username');
+		const form = await superValidate(request, zod4(userSchema));
+		if (!form.valid) {
+			console.error(form.errors);
+			return fail(400, {
+				form
+			});
+		}
 
-		try{
-			await new UserAPI(cookies, fetch).UpdateUser(
-				uid as string,
-				{handler, username} as {handler: string, username: string}
-			)
+		try {
+			await new UserAPI(cookies, fetch).UpdateUser(form.data.uid, {
+				handler: form.data.handler,
+				username: form.data.username
+			});
 		} catch (error) {
 			if (error instanceof ValidationError) {
-				return fail(400, {handler, username, errors: error.fields});
+				if (error.fields.handler) {
+					return setError(form, 'handler', error.fields.handler);
+				}
+				return fail(400, { form });
 			}
 			console.error('Error updating user:', error);
-			return fail(400, {handler, username, errors: error});
+			return fail(400, { form });
 		}
-		if (firstTime === 'true') {
-			redirect(303, '/');
+		if (form.data.firstTime) {
+			throw redirect(303, '/');
 		}
-		return { success: true };
+		return { form };
 	},
 
 	logout: async ({ cookies, fetch }) => {
@@ -39,7 +54,6 @@ export const actions = {
 			console.error('Logout error:', error);
 			// Continue with redirect even if backend logout fails
 		}
-		redirect(303, '/')
+		redirect(303, '/');
 	}
 } satisfies Actions;
-

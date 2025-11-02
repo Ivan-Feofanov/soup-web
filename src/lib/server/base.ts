@@ -1,7 +1,7 @@
 import type { Cookies } from '@sveltejs/kit';
 import type { AuthResponse } from '$lib/types';
 import { API_URL } from '$env/static/private';
-import { handleErrorResponse, HttpStatus } from '$lib/server/utils';
+import { handleErrorResponse, HttpStatus } from '$lib/server/errors';
 
 export type Fetch = typeof fetch;
 

@@ -14,7 +14,7 @@ export const load: PageServerLoad = async ({ cookies, fetch }): Promise<{ recipe
 		}
 	});
 	try {
-		const recipes = await new KitchenAPI(cookies, fetch).GetRecipes();
+		const recipes = await new KitchenAPI(cookies, fetch).getRecipes();
 		return {
 			...pageTags,
 			recipes

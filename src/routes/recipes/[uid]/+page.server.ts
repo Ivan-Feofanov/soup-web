@@ -7,6 +7,9 @@ import { type Actions, error, fail, redirect } from '@sveltejs/kit';
 import {
 	ingredientSchema,
 	type IngredientSchema,
+	type RecipeDraftSchema,
+	recipeDraftSchema,
+	recipeFormSchema,
 	recipeSchema,
 	type RecipeSchema,
 	unitSchema,
@@ -22,7 +25,7 @@ interface PageData {
 	recipe: Recipe | null;
 	ingredients: Ingredient[];
 	units: Unit[];
-	form: SuperValidated<RecipeSchema>;
+	form: SuperValidated<RecipeSchema | RecipeDraftSchema>;
 	ingredientAddForm: SuperValidated<IngredientSchema>;
 	unitAddForm: SuperValidated<UnitSchema>;
 }
@@ -30,11 +33,23 @@ interface PageData {
 export const load: PageServerLoad = async ({ cookies, params, parent }): Promise<PageData> => {
 	const { user } = await parent();
 	const kitchen = new KitchenAPI(cookies, fetch);
-	const ingredients = await kitchen.GetIngredients();
-	const units = await kitchen.GetUnits();
+	const ingredients = await kitchen.getIngredients();
+	const units = await kitchen.getUnits();
 
 	if (params.uid === 'new') {
 		try {
+			const draft = await kitchen.getOrCreateDraft();
+			const draftFormData = {
+				...draft,
+				isDraft: true as const,
+				ingredients:
+					draft.ingredients?.map((i) => ({
+						ingredient_uid: i.ingredient.uid,
+						unit_uid: i.unit?.uid,
+						quantity: i.quantity,
+						notes: i.notes
+					})) || []
+			};
 			return {
 				pageMetaTags: definePageMetaTags({
 					title: 'New Recipe',
@@ -44,7 +59,7 @@ export const load: PageServerLoad = async ({ cookies, params, parent }): Promise
 				recipe: null,
 				ingredients,
 				units,
-				form: await superValidate(zod4(recipeSchema)),
+				form: await superValidate(draftFormData, zod4(recipeDraftSchema), { errors: false }),
 				ingredientAddForm: await superValidate(zod4(ingredientSchema)),
 				unitAddForm: await superValidate(zod4(unitSchema))
 			};
@@ -55,14 +70,10 @@ export const load: PageServerLoad = async ({ cookies, params, parent }): Promise
 	}
 
 	try {
-		const recipe = await kitchen.GetRecipe(params.uid);
+		const recipe = await kitchen.getRecipe(params.uid);
 		const recipeFormData = {
-			title: recipe.title,
-			description: recipe.description,
-			notes: recipe.notes,
-			image: recipe.image,
-			instructions: recipe.instructions,
-			visibility: recipe.visibility,
+			...recipe,
+			isDraft: false as const,
 			ingredients:
 				recipe.ingredients?.map((i) => ({
 					ingredient_uid: i.ingredient.uid,
@@ -93,12 +104,22 @@ export const actions: Actions = {
 		const kitchenApi = new KitchenAPI(event.cookies, event.fetch);
 		const imagesApi = new ImagesAPI();
 
-		const form = await superValidate(event, zod4(recipeSchema));
+		const form = await superValidate(event, zod4(recipeFormSchema));
 		if (!form.valid) {
 			console.error(form.errors);
 			return fail(400, {
 				form
 			});
+		}
+
+		if (form.data.isDraft) {
+			try {
+				await kitchenApi.updateDraft(form.data.uid, form.data);
+			} catch (e) {
+				console.error(e);
+				return fail(500, { form });
+			}
+			return { form };
 		}
 
 		let recipeUid = event.params.uid;
@@ -109,7 +130,7 @@ export const actions: Actions = {
 				if (form.data.newImage) {
 					form.data.image = await imagesApi.create(form.data.newImage);
 				}
-				recipeUid = await kitchenApi.CreateRecipe(form.data);
+				recipeUid = await kitchenApi.createRecipe(form.data);
 			} catch (e) {
 				console.error(e);
 				return fail(500, { form });
@@ -122,13 +143,45 @@ export const actions: Actions = {
 					}
 					form.data.image = await imagesApi.create(form.data.newImage);
 				}
-				await kitchenApi.UpdateRecipe(recipeUid, form.data);
+				await kitchenApi.updateRecipe(recipeUid, form.data);
 			} catch (e) {
 				console.error(e);
 				return fail(500, { form });
 			}
 		}
 		throw redirect(303, `/recipes/${recipeUid}`);
+	},
+	finishDraft: async (event) => {
+		const kitchenApi = new KitchenAPI(event.cookies, event.fetch);
+		const imagesApi = new ImagesAPI();
+
+		const form = await superValidate(event, zod4(recipeSchema));
+
+		if (!form.valid) {
+			console.error(form.errors);
+			return fail(400, {
+				form
+			});
+		}
+
+		try {
+			// Upload image if present
+			if (form.data.newImage) {
+				form.data.image = await imagesApi.create(form.data.newImage);
+			}
+
+			// Update draft with final data (including image)
+			await kitchenApi.updateDraft(form.data.uid, form.data);
+
+			// Finish the draft (converts to recipe)
+			await kitchenApi.finishDraft(form.data.uid);
+		} catch (e) {
+			console.error(e);
+			return fail(500, { form });
+		}
+
+		// Redirect to the newly created recipe (outside try-catch)
+		throw redirect(303, `/recipes/${form.data.uid}`);
 	},
 	deleteRecipe: async (event) => {
 		const recipeUid = event.params.uid;
@@ -140,11 +193,11 @@ export const actions: Actions = {
 		const imagesApi = new ImagesAPI();
 
 		try {
-			const recipe = await kitchenApi.GetRecipe(recipeUid);
+			const recipe = await kitchenApi.getRecipe(recipeUid);
 			if (recipe.image) {
 				await imagesApi.delete(recipe.image);
 			}
-			await kitchenApi.DeleteRecipe(recipeUid);
+			await kitchenApi.deleteRecipe(recipeUid);
 		} catch (e) {
 			console.error(e);
 			return fail(500, { error: 'Failed to delete recipe' });

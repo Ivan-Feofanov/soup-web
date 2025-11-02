@@ -28,7 +28,7 @@
 	import { tick } from 'svelte';
 	import { cn } from '$lib/utils';
 	import Divider from '$lib/components/Divider.svelte';
-	import { superForm, fileProxy } from 'sveltekit-superforms';
+	import SuperDebug, { superForm, fileProxy } from 'sveltekit-superforms';
 	import type { PageData } from './$types';
 	import { Image } from '@unpic/svelte';
 	import { buildCloudinaryUrl } from '$lib/cloudinary';
@@ -53,11 +53,54 @@
 		unitsList.map((unit: Unit) => ({ value: unit.uid, label: unit.name }))
 	);
 
+	let savedActiveElement: HTMLInputElement | HTMLTextAreaElement | null = null;
+	let savedSelectionStart: number | null = null;
+	let savedSelectionEnd: number | null = null;
+
 	const form = superForm(formData, {
 		dataType: 'json',
+		resetForm: false,
+		invalidateAll: false,
 		onResult: ({ result }) => {
 			if (result.type === 'success' || result.type === 'redirect') {
 				edit = false;
+			}
+		},
+		onUpdated: async () => {
+			// Only restore focus for auto-saves, not explicit saves
+			if (!isExplicitSave && savedActiveElement) {
+				// Wait for Svelte to finish updating the DOM
+				await tick();
+
+				// Then wait for the browser to finish rendering
+				requestAnimationFrame(() => {
+					if (
+						savedActiveElement &&
+						(savedActiveElement.tagName === 'INPUT' || savedActiveElement.tagName === 'TEXTAREA')
+					) {
+						savedActiveElement.focus();
+
+						// Use another requestAnimationFrame to ensure focus is set before setting selection
+						requestAnimationFrame(() => {
+							if (
+								savedActiveElement &&
+								savedSelectionStart !== null &&
+								savedSelectionEnd !== null
+							) {
+								savedActiveElement.setSelectionRange(savedSelectionStart, savedSelectionEnd);
+							}
+							// Clear saved state
+							savedActiveElement = null;
+							savedSelectionStart = null;
+							savedSelectionEnd = null;
+						});
+					} else {
+						// Clear saved state even if we couldn't restore
+						savedActiveElement = null;
+						savedSelectionStart = null;
+						savedSelectionEnd = null;
+					}
+				});
 			}
 		}
 	});
@@ -98,6 +141,47 @@
 	const { form: formValues, enhance, errors, submitting } = form;
 	const { form: ingredientFormValues, enhance: ingredientEnhance } = ingredientForm;
 	const { form: unitFormValues, enhance: unitEnhance } = unitForm;
+
+	// Track if this is an explicit save (not auto-save)
+	let isExplicitSave = $state(false);
+	const shouldBlockUI = $derived($submitting && isExplicitSave);
+
+	// Auto-save state
+	let autoSaveTimeout: ReturnType<typeof setTimeout> | null = null;
+	let isAutoSaving = $state(false);
+
+	// Auto-save helper for drafts - debounced to avoid too many requests
+	const autoSaveDraft = () => {
+		if (!$formValues.isDraft) return;
+
+		// Clear existing timeout
+		if (autoSaveTimeout) {
+			clearTimeout(autoSaveTimeout);
+		}
+
+		// Debounce auto-save by 1 second
+		autoSaveTimeout = setTimeout(async () => {
+			if (isAutoSaving || $submitting) return;
+
+			isAutoSaving = true;
+			isExplicitSave = false;
+
+			// Save the currently focused element and cursor position
+			savedActiveElement = document.activeElement as HTMLInputElement | HTMLTextAreaElement;
+			savedSelectionStart = savedActiveElement?.selectionStart ?? null;
+			savedSelectionEnd = savedActiveElement?.selectionEnd ?? null;
+
+			try {
+				// Create FormData and encode as JSON for superforms
+				form.submit();
+			} catch (error) {
+				console.error('Auto-save failed:', error);
+			} finally {
+				isAutoSaving = false;
+			}
+		}, 1000);
+	};
+
 	// Image
 	let imageInput = $state<HTMLInputElement>(null!);
 	let imageSrc = $state('');
@@ -111,6 +195,7 @@
 				imageSrc = reader.result as string;
 			});
 			reader.readAsDataURL(file);
+			autoSaveDraft();
 
 			return;
 		}
@@ -127,12 +212,20 @@
 
 	function addInstruction() {
 		$formValues.instructions = [
-			...$formValues.instructions,
-			{ uid: Date.now().toString(), step: $formValues.instructions.length + 1, description: '' }
+			...($formValues.instructions || []),
+			{
+				uid: Date.now().toString(),
+				step: $formValues.instructions?.length || 1,
+				description: ''
+			}
 		];
+		autoSaveDraft();
 	}
 	function removeInstruction(idToRemove: string) {
-		$formValues.instructions = $formValues.instructions.filter((instr) => instr.uid !== idToRemove);
+		$formValues.instructions = $formValues.instructions?.filter(
+			(instr) => instr.uid !== idToRemove
+		);
+		autoSaveDraft();
 	}
 
 	// Ingredients
@@ -172,10 +265,12 @@
 		selectedIngredientUID = '';
 		selectedUnitUID = undefined;
 		quantity = undefined;
+		autoSaveDraft();
 	};
 
 	const removeIngredient = (ingredientUID: string) => {
 		$formValues.ingredients = selectedIngredients.filter((i) => i.ingredient_uid !== ingredientUID);
+		autoSaveDraft();
 	};
 
 	const closeIngredientSelect = () => {
@@ -207,7 +302,7 @@
 	// Units
 	let unitSelectOpen = $state(false);
 	let addUnitDialogOpen = $state(false);
-	const unitLabel = (unitUID: string | undefined): string => {
+	const unitLabel = (unitUID: string | null | undefined): string => {
 		if (!unitUID) {
 			return '';
 		}
@@ -247,10 +342,11 @@
 	enctype="multipart/form-data"
 	action="?/saveRecipe"
 	class="relative mx-auto space-y-6 rounded-lg max-sm:mt-8 sm:w-2/3 sm:border sm:p-6"
-	class:opacity-60={$submitting}
-	class:pointer-events-none={$submitting}
+	class:opacity-60={shouldBlockUI}
+	class:pointer-events-none={shouldBlockUI}
 	use:enhance
 >
+	<input type="hidden" name="uid" value={$formValues.uid} />
 	<!-- Visibility -->
 	<Form.Field {form} name="visibility">
 		<Form.Control>
@@ -262,6 +358,7 @@
 					variant="outline"
 					class="w-full"
 					bind:value={$formValues.visibility}
+					onValueChange={() => autoSaveDraft()}
 				>
 					<ToggleGroup.Item value={RecipeVisibility.Private} aria-label="Toggle private"
 						>Private</ToggleGroup.Item
@@ -279,7 +376,7 @@
 		<Form.Control>
 			{#snippet children({ props })}
 				<Form.Label>Title</Form.Label>
-				<Input {...props} bind:value={$formValues.title} />
+				<Input {...props} bind:value={$formValues.title} onfocusout={() => autoSaveDraft()} />
 			{/snippet}
 		</Form.Control>
 		<Form.FieldErrors />
@@ -290,7 +387,11 @@
 		<Form.Control>
 			{#snippet children({ props })}
 				<Form.Label>Description</Form.Label>
-				<Textarea {...props} bind:value={$formValues.description} />
+				<Textarea
+					{...props}
+					bind:value={$formValues.description}
+					onfocusout={() => $formValues.description?.trim() && autoSaveDraft()}
+				/>
 			{/snippet}
 		</Form.Control>
 		<Form.FieldErrors />
@@ -301,7 +402,7 @@
 		<Form.Control>
 			{#snippet children({ props })}
 				<Form.Label>Notes (optional)</Form.Label>
-				<Textarea {...props} bind:value={$formValues.notes} />
+				<Textarea {...props} bind:value={$formValues.notes} onfocusout={() => autoSaveDraft()} />
 			{/snippet}
 		</Form.Control>
 	</Form.Field>
@@ -364,7 +465,7 @@
 	<div
 		class="space-y-2 rounded-md p-2"
 		use:dndzone={{
-			items: $formValues.instructions,
+			items: $formValues.instructions || [],
 			flipDurationMs: 200,
 			dropTargetClasses: ['outline'],
 			dropTargetStyle: {}
@@ -385,7 +486,7 @@
 										{...props}
 										bind:value={instruction.description}
 										class="field-sizing-content resize-none"
-										aria-invalid={$errors.instructions && $errors.instructions[instruction.uid]
+										aria-invalid={$errors.instructions && $errors.instructions[instruction.step - 1]
 											? 'true'
 											: undefined}
 									/>
@@ -399,9 +500,9 @@
 							</div>
 						{/snippet}
 					</Form.Control>
-					{#if $errors.instructions && $errors.instructions[instruction.uid]}
+					{#if $errors.instructions && $errors.instructions[instruction.step - 1]}
 						<div class="text-sm text-destructive">
-							{$errors.instructions[instruction.uid]}
+							{$errors.instructions[instruction.step - 1].description}
 						</div>
 					{/if}
 				</Form.Field>
@@ -592,18 +693,42 @@
 
 	<Field.Separator class="mb-4" />
 
-	<div class="flex flex-col-reverse gap-2 text-base sm:flex-row sm:justify-end">
-		<Button type="submit" class="sm:w-18">
-			{#if $submitting}
-				<Spinner class="size-9" />
-			{:else}
-				Save
-			{/if}
-		</Button>
+	<div class="flex flex-col-reverse gap-2 text-base sm:flex-row sm:items-center sm:justify-end">
+		{#if $formValues.isDraft && isAutoSaving}
+			<span class="text-sm text-muted-foreground">Saving draft...</span>
+		{/if}
+		{#if $formValues.isDraft}
+			<Button
+				type="submit"
+				formaction="?/finishDraft"
+				class="sm:w-auto"
+				disabled={shouldBlockUI}
+				onclick={() => (isExplicitSave = true)}
+			>
+				{#if shouldBlockUI}
+					<Spinner class="size-9" />
+				{:else}
+					Finish & Publish
+				{/if}
+			</Button>
+		{:else}
+			<Button
+				type="submit"
+				class="sm:w-18"
+				disabled={shouldBlockUI}
+				onclick={() => (isExplicitSave = true)}
+			>
+				{#if shouldBlockUI}
+					<Spinner class="size-9" />
+				{:else}
+					Save
+				{/if}
+			</Button>
+		{/if}
 		{#if edit}
 			<Button variant="outline" type="button" onclick={() => (edit = false)}>Cancel</Button>
 		{/if}
 	</div>
 </form>
 
-<!--<SuperDebug data={{ $formValues, $errors }} />-->
+<SuperDebug data={{ $formValues, $errors }} />

@@ -17,9 +17,8 @@ export const handleErrorResponse = async (response: Response) => {
 	try {
 		errorData = await response.json();
 		console.error('API request failed:', errorData);
-	} catch (e) {
-		console.error('Failed to parse error response:', e);
-		const errorString = `API request failed: ${response.statusText}`;
+	} catch {
+		const errorString = `API request failed: ${response.statusText}\nURL: ${response.url}`;
 		throw new Error(`API request failed: ${errorString}`);
 	}
 	if (response.status === HttpStatus.BAD_REQUEST && errorData?.errors) {

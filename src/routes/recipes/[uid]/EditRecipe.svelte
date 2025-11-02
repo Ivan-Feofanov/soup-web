@@ -13,6 +13,8 @@
 	import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
 	import GripVertical from '@lucide/svelte/icons/grip-vertical';
 	import ImageUp from '@lucide/svelte/icons/image-up';
+	import Loader2 from '@lucide/svelte/icons/loader-2';
+	import AlertCircle from '@lucide/svelte/icons/alert-circle';
 	import * as Form from '$lib/components/ui/form';
 	import * as Field from '$lib/components/ui/field';
 	import * as Select from '$lib/components/ui/select';
@@ -32,6 +34,8 @@
 	import type { PageData } from './$types';
 	import { Image } from '@unpic/svelte';
 	import { buildCloudinaryUrl } from '$lib/cloudinary';
+	import { toast } from 'svelte-sonner';
+	import { createDraftSaver, DEBOUNCE_TIMES } from '$lib/utils/draftSaver.js';
 
 	let { data, edit = $bindable() }: { data: PageData; edit?: boolean } = $props();
 	let {
@@ -53,10 +57,6 @@
 		unitsList.map((unit: Unit) => ({ value: unit.uid, label: unit.name }))
 	);
 
-	let savedActiveElement: HTMLInputElement | HTMLTextAreaElement | null = null;
-	let savedSelectionStart: number | null = null;
-	let savedSelectionEnd: number | null = null;
-
 	const form = superForm(formData, {
 		dataType: 'json',
 		resetForm: false,
@@ -64,43 +64,6 @@
 		onResult: ({ result }) => {
 			if (result.type === 'success' || result.type === 'redirect') {
 				edit = false;
-			}
-		},
-		onUpdated: async () => {
-			// Only restore focus for auto-saves, not explicit saves
-			if (!isExplicitSave && savedActiveElement) {
-				// Wait for Svelte to finish updating the DOM
-				await tick();
-
-				// Then wait for the browser to finish rendering
-				requestAnimationFrame(() => {
-					if (
-						savedActiveElement &&
-						(savedActiveElement.tagName === 'INPUT' || savedActiveElement.tagName === 'TEXTAREA')
-					) {
-						savedActiveElement.focus();
-
-						// Use another requestAnimationFrame to ensure focus is set before setting selection
-						requestAnimationFrame(() => {
-							if (
-								savedActiveElement &&
-								savedSelectionStart !== null &&
-								savedSelectionEnd !== null
-							) {
-								savedActiveElement.setSelectionRange(savedSelectionStart, savedSelectionEnd);
-							}
-							// Clear saved state
-							savedActiveElement = null;
-							savedSelectionStart = null;
-							savedSelectionEnd = null;
-						});
-					} else {
-						// Clear saved state even if we couldn't restore
-						savedActiveElement = null;
-						savedSelectionStart = null;
-						savedSelectionEnd = null;
-					}
-				});
 			}
 		}
 	});
@@ -146,58 +109,118 @@
 	let isExplicitSave = $state(false);
 	const shouldBlockUI = $derived($submitting && isExplicitSave);
 
-	// Auto-save state
-	let autoSaveTimeout: ReturnType<typeof setTimeout> | null = null;
-	let isAutoSaving = $state(false);
+	// Smart draft saver with toast notifications
+	const draftSaver = createDraftSaver({
+		onSave: async () => {
+			if (!$formValues.isDraft) return;
 
-	// Auto-save helper for drafts - debounced to avoid too many requests
-	const autoSaveDraft = () => {
-		if (!$formValues.isDraft) return;
+			// Make direct API call to autosave endpoint to avoid losing focus
+			const response = await fetch(`/recipes/${$formValues.uid}/autosave`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify($formValues)
+			});
 
-		// Clear existing timeout
-		if (autoSaveTimeout) {
-			clearTimeout(autoSaveTimeout);
-		}
-
-		// Debounce auto-save by 1 second
-		autoSaveTimeout = setTimeout(async () => {
-			if (isAutoSaving || $submitting) return;
-
-			isAutoSaving = true;
-			isExplicitSave = false;
-
-			// Save the currently focused element and cursor position
-			savedActiveElement = document.activeElement as HTMLInputElement | HTMLTextAreaElement;
-			savedSelectionStart = savedActiveElement?.selectionStart ?? null;
-			savedSelectionEnd = savedActiveElement?.selectionEnd ?? null;
-
-			try {
-				// Create FormData and encode as JSON for superforms
-				form.submit();
-			} catch (error) {
-				console.error('Auto-save failed:', error);
-			} finally {
-				isAutoSaving = false;
+			if (!response.ok) {
+				throw new Error('Failed to save draft');
 			}
-		}, 1000);
+		},
+		onSuccess: () => {
+			toast.success('Draft saved', {
+				duration: 2000
+			});
+		},
+		onError: (error) => {
+			console.error('Draft save failed:', error);
+			toast.error('Failed to save draft', {
+				description: 'Your changes are still in the form. Try again.',
+				duration: 5000,
+				action: {
+					label: 'Retry',
+					onClick: () => draftSaver.triggerSave(0)
+				}
+			});
+		}
+	});
+
+	// Auto-save helper for drafts
+	const autoSaveDraft = (debounceMs?: number) => {
+		if (!$formValues.isDraft) return;
+		draftSaver.triggerSave(debounceMs);
 	};
 
-	// Image
+	// Image handling with immediate upload
 	let imageInput = $state<HTMLInputElement>(null!);
 	let imageSrc = $state('');
+	let isUploadingImage = $state(false);
 
-	const onChange = () => {
-		if (!imageInput.files) return;
+	const onChange = async () => {
+		if (!imageInput.files || !$formValues.isDraft) return;
 		const file = imageInput.files[0];
-		if (file) {
-			const reader = new FileReader();
-			reader.addEventListener('load', function () {
-				imageSrc = reader.result as string;
-			});
-			reader.readAsDataURL(file);
-			autoSaveDraft();
+		if (!file) return;
 
-			return;
+		// Show preview immediately
+		const reader = new FileReader();
+		reader.addEventListener('load', function () {
+			imageSrc = reader.result as string;
+		});
+		reader.readAsDataURL(file);
+
+		// Upload image immediately in background
+		isUploadingImage = true;
+		try {
+			const formData = new FormData();
+			formData.append('draftUid', $formValues.uid);
+			formData.append('image', file);
+
+			const response = await fetch('?/uploadDraftImage', {
+				method: 'POST',
+				body: formData
+			});
+
+			if (!response.ok) {
+				throw new Error('Upload failed');
+			}
+
+			const result = await response.json();
+
+			// SvelteKit form action response structure
+			if (result.type === 'success') {
+				// Parse the devalue serialized data
+				const data = typeof result.data === 'string' ? JSON.parse(result.data) : result.data;
+
+				// Handle devalue array format: [mapping, values...]
+				let imageUrl;
+				if (Array.isArray(data)) {
+					// Devalue format: [{"success":1,"imageUrl":2}, true, "url"]
+					imageUrl = data[2]; // The actual URL is at index 2
+				} else if (data?.imageUrl) {
+					// Regular object format
+					imageUrl = data.imageUrl;
+				}
+
+				if (imageUrl) {
+					$formValues.image = imageUrl;
+					toast.success('Image uploaded');
+				} else {
+					throw new Error('No image URL in response');
+				}
+			} else if (result.type === 'failure') {
+				throw new Error(result.data?.error || 'Upload failed');
+			} else {
+				console.error('Unexpected response:', result);
+				throw new Error('Unexpected response format');
+			}
+		} catch (error) {
+			console.error('Image upload failed:', error);
+			toast.error('Failed to upload image', {
+				description: 'The image will be uploaded when you publish.',
+				duration: 5000
+			});
+		} finally {
+			isUploadingImage = false;
 		}
 	};
 
@@ -208,6 +231,8 @@
 	}
 	function handleDndFinalize(e: CustomEvent<DndEvent<Instruction>>) {
 		$formValues.instructions = e.detail.items.map((item, index) => ({ ...item, step: index + 1 }));
+		// Save after reordering with REORDER debounce time
+		autoSaveDraft(DEBOUNCE_TIMES.REORDER);
 	}
 
 	function addInstruction() {
@@ -219,13 +244,12 @@
 				description: ''
 			}
 		];
-		autoSaveDraft();
 	}
 	function removeInstruction(idToRemove: string) {
 		$formValues.instructions = $formValues.instructions?.filter(
 			(instr) => instr.uid !== idToRemove
 		);
-		autoSaveDraft();
+		autoSaveDraft(DEBOUNCE_TIMES.STRUCTURAL);
 	}
 
 	// Ingredients
@@ -265,12 +289,12 @@
 		selectedIngredientUID = '';
 		selectedUnitUID = undefined;
 		quantity = undefined;
-		autoSaveDraft();
+		autoSaveDraft(DEBOUNCE_TIMES.STRUCTURAL);
 	};
 
 	const removeIngredient = (ingredientUID: string) => {
 		$formValues.ingredients = selectedIngredients.filter((i) => i.ingredient_uid !== ingredientUID);
-		autoSaveDraft();
+		autoSaveDraft(DEBOUNCE_TIMES.STRUCTURAL);
 	};
 
 	const closeIngredientSelect = () => {
@@ -358,7 +382,7 @@
 					variant="outline"
 					class="w-full"
 					bind:value={$formValues.visibility}
-					onValueChange={() => autoSaveDraft()}
+					onValueChange={() => autoSaveDraft(DEBOUNCE_TIMES.TOGGLE)}
 				>
 					<ToggleGroup.Item value={RecipeVisibility.Private} aria-label="Toggle private"
 						>Private</ToggleGroup.Item
@@ -376,7 +400,11 @@
 		<Form.Control>
 			{#snippet children({ props })}
 				<Form.Label>Title</Form.Label>
-				<Input {...props} bind:value={$formValues.title} onfocusout={() => autoSaveDraft()} />
+				<Input
+					{...props}
+					bind:value={$formValues.title}
+					oninput={() => autoSaveDraft(DEBOUNCE_TIMES.TEXT_FIELD)}
+				/>
 			{/snippet}
 		</Form.Control>
 		<Form.FieldErrors />
@@ -390,7 +418,7 @@
 				<Textarea
 					{...props}
 					bind:value={$formValues.description}
-					onfocusout={() => $formValues.description?.trim() && autoSaveDraft()}
+					oninput={() => autoSaveDraft(DEBOUNCE_TIMES.TEXT_FIELD)}
 				/>
 			{/snippet}
 		</Form.Control>
@@ -402,7 +430,11 @@
 		<Form.Control>
 			{#snippet children({ props })}
 				<Form.Label>Notes (optional)</Form.Label>
-				<Textarea {...props} bind:value={$formValues.notes} onfocusout={() => autoSaveDraft()} />
+				<Textarea
+					{...props}
+					bind:value={$formValues.notes}
+					oninput={() => autoSaveDraft(DEBOUNCE_TIMES.TEXT_FIELD)}
+				/>
 			{/snippet}
 		</Form.Control>
 	</Form.Field>
@@ -489,6 +521,7 @@
 										aria-invalid={$errors.instructions && $errors.instructions[instruction.step - 1]
 											? 'true'
 											: undefined}
+										oninput={() => autoSaveDraft(DEBOUNCE_TIMES.TEXT_FIELD)}
 									/>
 								</div>
 								<Button
@@ -694,8 +727,20 @@
 	<Field.Separator class="mb-4" />
 
 	<div class="flex flex-col-reverse gap-2 text-base sm:flex-row sm:items-center sm:justify-end">
-		{#if $formValues.isDraft && isAutoSaving}
-			<span class="text-sm text-muted-foreground">Saving draft...</span>
+		{#if $formValues.isDraft}
+			<!-- Save status indicator -->
+			<div class="flex items-center gap-2 text-sm text-muted-foreground">
+				{#if draftSaver.saveState === 'saving' || isUploadingImage}
+					<Loader2 class="h-4 w-4 animate-spin" />
+					<span>{isUploadingImage ? 'Uploading image...' : 'Saving...'}</span>
+				{:else if draftSaver.saveState === 'saved'}
+					<Check class="h-4 w-4 text-green-500" />
+					<span class="text-green-600 dark:text-green-400">Saved</span>
+				{:else if draftSaver.saveState === 'error'}
+					<AlertCircle class="h-4 w-4 text-destructive" />
+					<span class="text-destructive">Save failed</span>
+				{/if}
+			</div>
 		{/if}
 		{#if $formValues.isDraft}
 			<Button
@@ -708,7 +753,7 @@
 				{#if shouldBlockUI}
 					<Spinner class="size-9" />
 				{:else}
-					Finish & Publish
+					Finish
 				{/if}
 			</Button>
 		{:else}

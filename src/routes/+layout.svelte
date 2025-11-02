@@ -2,6 +2,7 @@
 	import '../app.css';
 	import { ModeWatcher, toggleMode } from 'mode-watcher';
 	import { deepMerge, MetaTags } from 'svelte-meta-tags';
+	import { Toaster } from 'svelte-sonner';
 	import User from '@lucide/svelte/icons/user';
 	import LogIn from '@lucide/svelte/icons/log-in';
 	import LogOut from '@lucide/svelte/icons/log-out';
@@ -29,6 +30,7 @@
 </script>
 
 <ModeWatcher defaultMode="system" />
+<Toaster richColors position="bottom-right" />
 
 <MetaTags {...metaTags} />
 

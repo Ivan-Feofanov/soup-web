@@ -155,13 +155,19 @@ export const actions: Actions = {
 		const kitchenApi = new KitchenAPI(event.cookies, event.fetch);
 		const imagesApi = new ImagesAPI();
 
-		const form = await superValidate(event, zod4(recipeSchema));
+		// Validate using recipeFormSchema which handles both draft and recipe
+		const form = await superValidate(event, zod4(recipeFormSchema));
 
 		if (!form.valid) {
 			console.error(form.errors);
 			return fail(400, {
 				form
 			});
+		}
+
+		// Ensure we have a draft
+		if (!form.data.isDraft) {
+			return fail(400, { form, error: 'Can only finish drafts' });
 		}
 
 		try {
@@ -227,5 +233,30 @@ export const actions: Actions = {
 		const kitchenAPI = new KitchenAPI(event.cookies, event.fetch);
 		const { created, unit } = await kitchenAPI.addUnit(form.data);
 		return { success: true, form, unit, created };
+	},
+	uploadDraftImage: async (event) => {
+		const imagesApi = new ImagesAPI();
+		const kitchenApi = new KitchenAPI(event.cookies, event.fetch);
+
+		try {
+			const formData = await event.request.formData();
+			const draftUid = formData.get('draftUid') as string;
+			const imageFile = formData.get('image') as File;
+
+			if (!draftUid || !imageFile) {
+				return fail(400, { error: 'Draft UID and image are required' });
+			}
+
+			// Upload image to Cloudinary
+			const imageUrl = await imagesApi.create(imageFile);
+
+			// Update draft with new image URL
+			await kitchenApi.updateDraft(draftUid, { image: imageUrl });
+
+			return { success: true, imageUrl };
+		} catch (e) {
+			console.error('Image upload failed:', e);
+			return fail(500, { error: 'Failed to upload image' });
+		}
 	}
 };

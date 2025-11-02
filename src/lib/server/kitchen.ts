@@ -79,6 +79,6 @@ export class KitchenAPI extends BaseAPI {
 	}
 
 	async finishDraft(uid: string) {
-		return this.POST(`/recipes/drafts/${uid}/finish/`);
+		return this.POST(`/recipes/drafts/${uid}/finish`);
 	}
 }

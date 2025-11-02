@@ -64,6 +64,7 @@
 		]
 	},
 	"dependencies": {
-		"cloudinary": "^2.8.0"
+		"cloudinary": "^2.8.0",
+		"svelte-sonner": "^1.0.5"
 	}
 }

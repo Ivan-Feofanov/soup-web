@@ -11,6 +11,9 @@ importers:
       cloudinary:
         specifier: ^2.8.0
         version: 2.8.0
+      svelte-sonner:
+        specifier: ^1.0.5
+        version: 1.0.5(svelte@5.39.11)
     devDependencies:
       '@cloudflare/workers-types':
         specifier: ^4.20251014.0
@@ -1940,6 +1943,11 @@ packages:
     peerDependencies:
       svelte: ^5.7.0
 
+  runed@0.28.0:
+    resolution: {integrity: sha512-k2xx7RuO9hWcdd9f+8JoBeqWtYrm5CALfgpkg2YDB80ds/QE4w0qqu34A7fqiAwiBBSBQOid7TLxwxVC27ymWQ==}
+    peerDependencies:
+      svelte: ^5.7.0
+
   runed@0.29.2:
     resolution: {integrity: sha512-0cq6cA6sYGZwl/FvVqjx9YN+1xEBu9sDDyuWdDW1yWX7JF2wmvmVKfH+hVCZs+csW+P3ARH92MjI3H9QTagOQA==}
     peerDependencies:
@@ -2045,6 +2053,11 @@ packages:
 
   svelte-meta-tags@4.5.0:
     resolution: {integrity: sha512-E1/ULp4j8qwYFQeYBR0WypgOIsZkOnywAExFhufyl07eTvyCDQVW1HaNTSA0n2sX/Hw0jtti+TKuOml5dt2v9A==}
+    peerDependencies:
+      svelte: ^5.0.0
+
+  svelte-sonner@1.0.5:
+    resolution: {integrity: sha512-9dpGPFqKb/QWudYqGnEz93vuY+NgCEvyNvxoCLMVGw6sDN/3oVeKV1xiEirW2E1N3vJEyj5imSBNOGltQHA7mg==}
     peerDependencies:
       svelte: ^5.0.0
 
@@ -3892,6 +3905,11 @@ snapshots:
       esm-env: 1.2.2
       svelte: 5.39.11
 
+  runed@0.28.0(svelte@5.39.11):
+    dependencies:
+      esm-env: 1.2.2
+      svelte: 5.39.11
+
   runed@0.29.2(svelte@5.39.11):
     dependencies:
       esm-env: 1.2.2
@@ -4014,6 +4032,11 @@ snapshots:
   svelte-meta-tags@4.5.0(svelte@5.39.11):
     dependencies:
       schema-dts: 1.1.5
+      svelte: 5.39.11
+
+  svelte-sonner@1.0.5(svelte@5.39.11):
+    dependencies:
+      runed: 0.28.0(svelte@5.39.11)
       svelte: 5.39.11
 
   svelte-toolbelt@0.10.5(svelte@5.39.11):

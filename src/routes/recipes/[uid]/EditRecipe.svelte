@@ -35,7 +35,7 @@
 	import { Image } from '@unpic/svelte';
 	import { buildCloudinaryUrl } from '$lib/cloudinary';
 	import { toast } from 'svelte-sonner';
-	import { createDraftSaver, DEBOUNCE_TIMES } from '$lib/utils/draftSaver.js';
+	import { createDraftSaver, DEBOUNCE_TIMES } from '$lib/utils/draftSaver.svelte.js';
 
 	let { data, edit = $bindable() }: { data: PageData; edit?: boolean } = $props();
 	let {

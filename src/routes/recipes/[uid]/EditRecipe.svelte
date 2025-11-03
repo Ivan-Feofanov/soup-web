@@ -30,7 +30,7 @@
 	import { tick } from 'svelte';
 	import { cn } from '$lib/utils';
 	import Divider from '$lib/components/Divider.svelte';
-	import SuperDebug, { superForm, fileProxy } from 'sveltekit-superforms';
+	import { superForm, fileProxy } from 'sveltekit-superforms';
 	import type { PageData } from './$types';
 	import { Image } from '@unpic/svelte';
 	import { buildCloudinaryUrl } from '$lib/cloudinary';
@@ -776,4 +776,4 @@
 	</div>
 </form>
 
-<SuperDebug data={{ $formValues, $errors }} />
+<!--<SuperDebug data={{ $formValues, $errors }} />-->

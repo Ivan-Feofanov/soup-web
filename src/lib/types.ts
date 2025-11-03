@@ -28,7 +28,7 @@ export type Instruction = {
 	uid: string;
 	step: number;
 	description: string;
-	timer?: number; // in minutes
+	timer?: number | null; // in minutes
 };
 
 export type User = {

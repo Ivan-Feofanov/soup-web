@@ -22,7 +22,7 @@ const Instruction = z.object({
 	uid: z.string(),
 	step: z.number(),
 	description: z.string(),
-	timer: z.number().optional()
+	timer: z.number().optional().nullable()
 });
 export type InstructionSchema = z.infer<typeof Instruction>;
 
@@ -39,7 +39,11 @@ export const recipeSchema = z.object({
 		.string()
 		.min(1, 'Description is required')
 		.transform((value) => value.trim()),
-	notes: z.string().optional(),
+	notes: z
+		.string()
+		.optional()
+		.nullable()
+		.transform((value) => value?.trim()),
 	instructions: z
 		.array(Instruction)
 		.default([{ uid: new Date().getTime().toString(), step: 1, description: '' }])

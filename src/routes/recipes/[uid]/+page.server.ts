@@ -152,12 +152,7 @@ export const actions: Actions = {
 		throw redirect(303, `/recipes/${recipeUid}`);
 	},
 	finishDraft: async (event) => {
-		const kitchenApi = new KitchenAPI(event.cookies, event.fetch);
-		const imagesApi = new ImagesAPI();
-
-		// Validate using recipeFormSchema which handles both draft and recipe
-		const form = await superValidate(event, zod4(recipeFormSchema));
-
+		const form = await superValidate(event, zod4(recipeSchema));
 		if (!form.valid) {
 			console.error(form.errors);
 			return fail(400, {
@@ -171,11 +166,7 @@ export const actions: Actions = {
 		}
 
 		try {
-			// Upload image if present
-			if (form.data.newImage) {
-				form.data.image = await imagesApi.create(form.data.newImage);
-			}
-
+			const kitchenApi = new KitchenAPI(event.cookies, event.fetch);
 			// Update draft with final data (including image)
 			await kitchenApi.updateDraft(form.data.uid, form.data);
 
@@ -234,24 +225,19 @@ export const actions: Actions = {
 		const { created, unit } = await kitchenAPI.addUnit(form.data);
 		return { success: true, form, unit, created };
 	},
-	uploadDraftImage: async (event) => {
+	uploadImage: async (event) => {
 		const imagesApi = new ImagesAPI();
-		const kitchenApi = new KitchenAPI(event.cookies, event.fetch);
 
 		try {
 			const formData = await event.request.formData();
-			const draftUid = formData.get('draftUid') as string;
 			const imageFile = formData.get('image') as File;
 
-			if (!draftUid || !imageFile) {
-				return fail(400, { error: 'Draft UID and image are required' });
+			if (!imageFile) {
+				return fail(400, { error: 'Image file is required' });
 			}
 
-			// Upload image to Cloudinary
+			// Upload image to Cloudinary - single responsibility!
 			const imageUrl = await imagesApi.create(imageFile);
-
-			// Update draft with new image URL
-			await kitchenApi.updateDraft(draftUid, { image: imageUrl });
 
 			return { success: true, imageUrl };
 		} catch (e) {

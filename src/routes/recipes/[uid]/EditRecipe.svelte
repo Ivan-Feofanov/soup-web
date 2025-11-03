@@ -157,7 +157,7 @@
 	let isUploadingImage = $state(false);
 
 	const onChange = async () => {
-		if (!imageInput.files || !$formValues.isDraft) return;
+		if (!imageInput.files) return;
 		const file = imageInput.files[0];
 		if (!file) return;
 
@@ -168,59 +168,62 @@
 		});
 		reader.readAsDataURL(file);
 
-		// Upload image immediately in background
-		isUploadingImage = true;
-		try {
-			const formData = new FormData();
-			formData.append('draftUid', $formValues.uid);
-			formData.append('image', file);
+		// For drafts: upload immediately and update draft
+		// For published recipes: just set newImage, will upload on save
+		if ($formValues.isDraft) {
+			isUploadingImage = true;
+			try {
+				const formData = new FormData();
+				formData.append('image', file);
 
-			const response = await fetch('?/uploadDraftImage', {
-				method: 'POST',
-				body: formData
-			});
+				const response = await fetch('?/uploadImage', {
+					method: 'POST',
+					body: formData
+				});
 
-			if (!response.ok) {
-				throw new Error('Upload failed');
-			}
-
-			const result = await response.json();
-
-			// SvelteKit form action response structure
-			if (result.type === 'success') {
-				// Parse the devalue serialized data
-				const data = typeof result.data === 'string' ? JSON.parse(result.data) : result.data;
-
-				// Handle devalue array format: [mapping, values...]
-				let imageUrl;
-				if (Array.isArray(data)) {
-					// Devalue format: [{"success":1,"imageUrl":2}, true, "url"]
-					imageUrl = data[2]; // The actual URL is at index 2
-				} else if (data?.imageUrl) {
-					// Regular object format
-					imageUrl = data.imageUrl;
+				if (!response.ok) {
+					throw new Error('Upload failed');
 				}
 
-				if (imageUrl) {
-					$formValues.image = imageUrl;
-					toast.success('Image uploaded');
+				const result = await response.json();
+
+				// SvelteKit form action response structure
+				if (result.type === 'success') {
+					// Parse the devalue serialized data
+					const data = typeof result.data === 'string' ? JSON.parse(result.data) : result.data;
+
+					// Handle devalue array format: [mapping, values...]
+					let imageUrl;
+					if (Array.isArray(data)) {
+						// Devalue format: [{"success":1,"imageUrl":2}, true, "url"]
+						imageUrl = data[2]; // The actual URL is at index 2
+					} else if (data?.imageUrl) {
+						// Regular object format
+						imageUrl = data.imageUrl;
+					}
+
+					if (imageUrl) {
+						$formValues.image = imageUrl;
+						autoSaveDraft(DEBOUNCE_TIMES.IMMEDIATE);
+						toast.success('Image uploaded');
+					} else {
+						throw new Error('No image URL in response');
+					}
+				} else if (result.type === 'failure') {
+					throw new Error(result.data?.error || 'Upload failed');
 				} else {
-					throw new Error('No image URL in response');
+					console.error('Unexpected response:', result);
+					throw new Error('Unexpected response format');
 				}
-			} else if (result.type === 'failure') {
-				throw new Error(result.data?.error || 'Upload failed');
-			} else {
-				console.error('Unexpected response:', result);
-				throw new Error('Unexpected response format');
+			} catch (error) {
+				console.error('Image upload failed:', error);
+				toast.error('Failed to upload image', {
+					description: 'The image will be uploaded when you publish.',
+					duration: 5000
+				});
+			} finally {
+				isUploadingImage = false;
 			}
-		} catch (error) {
-			console.error('Image upload failed:', error);
-			toast.error('Failed to upload image', {
-				description: 'The image will be uploaded when you publish.',
-				duration: 5000
-			});
-		} finally {
-			isUploadingImage = false;
 		}
 	};
 
@@ -453,7 +456,7 @@
 					bind:this={imageInput}
 					onchange={onChange}
 				/>
-				{#if !$formValues.newImage && !$formValues.image}
+				{#if !('newImage' in $formValues && $formValues.newImage) && !$formValues.image}
 					<button
 						class="flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border py-4 transition-colors duration-300 hover:bg-muted/50"
 						onclick={preventDefault(() => imageInput.click())}

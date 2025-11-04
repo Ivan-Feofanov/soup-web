@@ -41,6 +41,7 @@ export type User = {
 export type Recipe = {
 	uid: string;
 	title: string;
+	slug?: string;
 	description: string;
 	notes?: string;
 	image?: string;
@@ -57,6 +58,7 @@ export type Recipe = {
 export type ServerRecipe = {
 	uid: string;
 	title: string;
+	slug?: string;
 	description: string;
 	created_at: string; // ISO date string
 	updated_at: string; // ISO date string

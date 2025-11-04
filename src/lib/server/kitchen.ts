@@ -19,8 +19,8 @@ export class KitchenAPI extends BaseAPI {
 		}));
 	}
 
-	async getRecipe(uid: string): Promise<Recipe> {
-		const response = await this.GET(`/recipes/${uid}`);
+	async getRecipe(slug: string): Promise<Recipe> {
+		const response = await this.GET(`/recipes/${slug}`);
 		const data = await response.json();
 		return {
 			...data,

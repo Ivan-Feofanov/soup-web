@@ -36,7 +36,7 @@ export const load: PageServerLoad = async ({ cookies, params, parent }): Promise
 	const ingredients = await kitchen.getIngredients();
 	const units = await kitchen.getUnits();
 
-	if (params.uid === 'new') {
+	if (params.slug === 'new') {
 		try {
 			const draft = await kitchen.getOrCreateDraft();
 			const draftFormData = {
@@ -70,7 +70,7 @@ export const load: PageServerLoad = async ({ cookies, params, parent }): Promise
 	}
 
 	try {
-		const recipe = await kitchen.getRecipe(params.uid);
+		const recipe = await kitchen.getRecipe(params.slug);
 		const recipeFormData = {
 			...recipe,
 			isDraft: false as const,
@@ -122,15 +122,15 @@ export const actions: Actions = {
 			return { form };
 		}
 
-		let recipeUid = event.params.uid;
-		if (!recipeUid) return fail(400, { error: 'Recipe UID is required' });
+		let recipeSlug = event.params.slug;
+		if (!recipeSlug) return fail(400, { error: 'Recipe UID is required' });
 
-		if (recipeUid === 'new') {
+		if (recipeSlug === 'new') {
 			try {
 				if (form.data.newImage) {
 					form.data.image = await imagesApi.create(form.data.newImage);
 				}
-				recipeUid = await kitchenApi.createRecipe(form.data);
+				recipeSlug = await kitchenApi.createRecipe(form.data);
 			} catch (e) {
 				console.error(e);
 				return fail(500, { form });
@@ -143,26 +143,22 @@ export const actions: Actions = {
 					}
 					form.data.image = await imagesApi.create(form.data.newImage);
 				}
-				await kitchenApi.updateRecipe(recipeUid, form.data);
+				await kitchenApi.updateRecipe(form.data.uid, form.data);
 			} catch (e) {
 				console.error(e);
 				return fail(500, { form });
 			}
 		}
-		throw redirect(303, `/recipes/${recipeUid}`);
+		throw redirect(303, `/recipes/${recipeSlug}`);
 	},
 	finishDraft: async (event) => {
-		const form = await superValidate(event, zod4(recipeSchema));
+		// Validate without the isDraft field since it will be true in the incoming data
+		const form = await superValidate(event, zod4(recipeSchema.omit({ isDraft: true })));
 		if (!form.valid) {
 			console.error(form.errors);
 			return fail(400, {
 				form
 			});
-		}
-
-		// Ensure we have a draft
-		if (!form.data.isDraft) {
-			return fail(400, { form, error: 'Can only finish drafts' });
 		}
 
 		try {
@@ -181,8 +177,8 @@ export const actions: Actions = {
 		throw redirect(303, `/recipes/${form.data.uid}`);
 	},
 	deleteRecipe: async (event) => {
-		const recipeUid = event.params.uid;
-		if (!recipeUid) {
+		const recipeSlug = event.params.slug;
+		if (!recipeSlug) {
 			return fail(400, { error: 'Recipe UID is required' });
 		}
 
@@ -190,11 +186,11 @@ export const actions: Actions = {
 		const imagesApi = new ImagesAPI();
 
 		try {
-			const recipe = await kitchenApi.getRecipe(recipeUid);
+			const recipe = await kitchenApi.getRecipe(recipeSlug);
 			if (recipe.image) {
 				await imagesApi.delete(recipe.image);
 			}
-			await kitchenApi.deleteRecipe(recipeUid);
+			await kitchenApi.deleteRecipe(recipe.uid);
 		} catch (e) {
 			console.error(e);
 			return fail(500, { error: 'Failed to delete recipe' });

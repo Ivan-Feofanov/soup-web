@@ -20,7 +20,7 @@
 	{/if}
 	<div class="grid grid-cols-1 gap-4">
 		{#each recentRecipes as r (r.uid)}
-			<a href={resolve(`/recipes/${r.uid}`)}>
+			<a href={resolve(`/recipes/${r.slug}`)}>
 				<article
 					class="flex flex-col rounded-xl border border-stone-200/60 bg-white/60 p-4 backdrop-blur dark:border-stone-700/60 dark:bg-stone-900/40"
 				>

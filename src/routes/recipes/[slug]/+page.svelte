@@ -9,9 +9,11 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import { buttonVariants } from '$lib/components/ui/button/index.js';
+	import { enhance } from '$app/forms';
 
 	let { data }: PageProps = $props();
 	let edit = $state(false);
+	let isDeleting = $state(false);
 </script>
 
 <section class="mx-auto max-w-5xl">
@@ -35,12 +37,27 @@
 							This action cannot be undone. This will permanently delete recipe from our servers.
 						</AlertDialog.Description>
 					</AlertDialog.Header>
-					<form method="post" action="?/deleteRecipe">
+					<form
+						method="post"
+						action="?/deleteRecipe"
+						use:enhance={() => {
+							isDeleting = true;
+							return async ({ update }) => {
+								await update();
+								isDeleting = false;
+							};
+						}}
+					>
 						<AlertDialog.Footer>
-							<AlertDialog.Cancel type="button">Cancel</AlertDialog.Cancel>
-							<AlertDialog.Action type="submit" class={buttonVariants({ variant: 'destructive' })}
-								>Delete</AlertDialog.Action
+							<AlertDialog.Cancel type="button" disabled={isDeleting}>Cancel</AlertDialog.Cancel>
+							<Button
+								type="submit"
+								variant="destructive"
+								class="dark:hover:bg-destructive/40"
+								disabled={isDeleting}
 							>
+								{isDeleting ? 'Deleting...' : 'Delete'}
+							</Button>
 						</AlertDialog.Footer>
 					</form>
 				</AlertDialog.Content>

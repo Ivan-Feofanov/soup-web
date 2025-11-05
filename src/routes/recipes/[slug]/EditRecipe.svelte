@@ -374,30 +374,39 @@
 	use:enhance
 >
 	<input type="hidden" name="uid" value={$formValues.uid} />
-	<!-- Visibility -->
-	<Form.Field {form} name="visibility">
-		<Form.Control>
-			{#snippet children({ props })}
-				<Form.Label>Visibility</Form.Label>
-				<ToggleGroup.Root
-					{...props}
-					type="single"
-					variant="outline"
-					class="w-full"
-					bind:value={$formValues.visibility}
-					onValueChange={() => autoSaveDraft(DEBOUNCE_TIMES.TOGGLE)}
-				>
-					<ToggleGroup.Item value={RecipeVisibility.Private} aria-label="Toggle private"
-						>Private</ToggleGroup.Item
+	{#if !$formValues.isDraft}
+		<!-- Visibility -->
+		<Form.Field {form} name="visibility">
+			<Form.Control>
+				{#snippet children({ props })}
+					<Form.Label>Visibility</Form.Label>
+					<ToggleGroup.Root
+						{...props}
+						type="single"
+						size="lg"
+						variant="outline"
+						class="w-full"
+						bind:value={$formValues.visibility}
+						onValueChange={() => autoSaveDraft(DEBOUNCE_TIMES.TOGGLE)}
 					>
-					<ToggleGroup.Item value={RecipeVisibility.Public} aria-label="Toggle public"
-						>Public</ToggleGroup.Item
-					>
-				</ToggleGroup.Root>
-			{/snippet}
-		</Form.Control>
-		<Form.FieldErrors />
-	</Form.Field>
+						<ToggleGroup.Item
+							value={RecipeVisibility.Private}
+							aria-label="Toggle private"
+							class=" data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+							>Private</ToggleGroup.Item
+						>
+						<ToggleGroup.Item
+							value={RecipeVisibility.Public}
+							aria-label="Toggle public"
+							class=" data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+							>Public</ToggleGroup.Item
+						>
+					</ToggleGroup.Root>
+				{/snippet}
+			</Form.Control>
+			<Form.FieldErrors />
+		</Form.Field>
+	{/if}
 	<!-- Title -->
 	<Form.Field {form} name="title">
 		<Form.Control>

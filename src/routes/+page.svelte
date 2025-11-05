@@ -15,21 +15,21 @@
 	<!-- new recipe button -->
 	{#if data.user}
 		<div class="flex justify-end">
-			<Button href={resolve('/recipes/new')} variant="outline">New Recipe</Button>
+			<Button href={resolve('/recipes/new')}>New Recipe</Button>
 		</div>
 	{/if}
 	<div class="grid grid-cols-1 gap-4">
 		{#each recentRecipes as r (r.uid)}
 			<a href={resolve(`/recipes/${r.slug}`)}>
 				<article
-					class="flex flex-col rounded-xl border border-stone-200/60 bg-white/60 p-4 backdrop-blur dark:border-stone-700/60 dark:bg-stone-900/40"
+					class="flex flex-col rounded-xl border bg-primary-foreground p-4 transition-colors hover:bg-primary-foreground/70"
 				>
 					<div class="flex flex-1 flex-row space-x-2">
 						<div class="flex-1 space-y-1">
 							<h2 class="text-lg leading-snug font-semibold">
 								<span class="cursor-default hover:underline">{r.title}</span>
 							</h2>
-							<p class="line-clamp-3 text-sm text-stone-600 dark:text-stone-300">{r.description}</p>
+							<p class="line-clamp-3 text-sm text-primary/80">{r.description}</p>
 						</div>
 						<div class="flex-none">
 							{#if r.image}
@@ -43,7 +43,7 @@
 							{/if}
 						</div>
 					</div>
-					<footer class="mt-3 flex items-center justify-between text-xs text-stone-500">
+					<footer class="mt-3 flex items-center justify-between text-xs text-primary/80">
 						<span>{r.author?.username ?? 'Anonymous'}</span>
 						<time>{format(r.updatedAt, 'HH:mm dd.MM.yyyy')}</time>
 					</footer>

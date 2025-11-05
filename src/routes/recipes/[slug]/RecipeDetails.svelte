@@ -53,13 +53,13 @@
 					<div class="flex items-center gap-2 text-lg">
 						<span class="font-medium">{ingredient.ingredient.name}</span>
 						{#if ingredient.quantity && ingredient.unit}
-							<span class=" text-stone-600 dark:text-stone-200">
+							<span class=" text-primary/80">
 								— {ingredient.quantity} {ingredient.unit.abbreviation}</span
 							>
 						{/if}
 					</div>
 					{#if ingredient.notes}
-						<div class="-mt-2 text-xs text-stone-600 dark:text-stone-400">{ingredient.notes}</div>
+						<div class="-mt-2 text-xs">{ingredient.notes}</div>
 					{/if}
 				</li>
 			{/each}
@@ -68,14 +68,14 @@
 
 	<section>
 		<Divider text="Instructions" />
-		<Item.Group class="mt-2 flex flex-col gap-3">
+		<Item.Group class="mt-2 flex flex-col gap-3 ">
 			{#each recipe?.instructions ?? [] as instruction (instruction.uid)}
 				<Item.Root variant="outline">
 					<Item.Media variant="icon">
 						<span class="text-lg">{instruction.step}</span>
 					</Item.Media>
 					<Item.Content>
-						<Item.Description class="line-clamp-none whitespace-pre-line"
+						<Item.Description class="line-clamp-none whitespace-pre-line text-primary/80"
 							>{instruction.description}</Item.Description
 						>
 					</Item.Content>
@@ -85,7 +85,7 @@
 	</section>
 
 	{#if recipe?.author}
-		<footer class="my-4 text-sm text-stone-500 dark:text-stone-400">
+		<footer class="my-4 text-sm text-primary">
 			<span>{recipe.author.username}</span>
 		</footer>
 	{/if}

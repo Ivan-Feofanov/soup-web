@@ -37,6 +37,9 @@ export const load: PageServerLoad = async ({ cookies, params, parent }): Promise
 	const units = await kitchen.getUnits();
 
 	if (params.slug === 'new') {
+		if (!user) {
+			throw redirect(303, '/');
+		}
 		try {
 			const draft = await kitchen.getOrCreateDraft();
 			const draftFormData = {

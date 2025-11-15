@@ -1,89 +1,38 @@
-export type Comment = {
-	id: string;
-	content: string;
-	createdAt: string; // ISO date string
-	author?: string;
+import type { components } from '$lib/server/api';
+
+// 1. Utility type to convert a single string from snake_case to camelCase
+type CamelCase<S extends string> = S extends `${infer Head}_${infer Tail}`
+	? `${Head}${Capitalize<CamelCase<Tail>>}`
+	: S;
+
+// 2. Mapped type to transform object keys
+type SnakeToCamelCase<T> = {
+	[K in keyof T as CamelCase<string & K>]: T[K] extends Record<string, unknown>
+		? SnakeToCamelCase<T[K]> // Recursively apply to nested objects
+		: T[K];
 };
 
-export type Ingredient = {
-	uid: string;
-	name: string;
-};
+export type Ingredient = components['schemas']['IngredientSchema'];
+export type IngredientCreate = components['schemas']['IngredientCreateSchema'];
+export type Unit = components['schemas']['UnitSchema'];
+export type Instruction = components['schemas']['InstructionSchema'];
+export type User = components['schemas']['UserSchema'];
+export type UserUpdate = components['schemas']['UserUpdateSchema'];
 
-export type IngredientInRecipe = {
-	uid: string;
-	ingredient: Ingredient;
-	unit: Unit | null;
-	quantity: number | null;
-	notes?: string;
-};
-
-export type Unit = {
-	uid: string;
-	name: string;
-	abbreviation?: string;
-};
-
-export type Instruction = {
-	uid: string;
-	step: number;
-	description: string;
-	timer?: number | null; // in minutes
-};
-
-export type User = {
-	uid: string;
-	email: string;
-	handler?: string;
-	username?: string;
-};
-
-export type Recipe = {
-	uid: string;
-	title: string;
-	slug?: string;
-	description: string;
-	notes?: string;
-	image?: string;
-	createdAt: Date;
-	updatedAt: Date;
-	author?: User;
-	tags?: string[];
-	comments?: Comment[];
-	ingredients?: IngredientInRecipe[];
-	instructions?: Instruction[];
-	visibility: RecipeVisibility;
-};
-
-export type ServerRecipe = {
-	uid: string;
-	title: string;
-	slug?: string;
-	description: string;
-	created_at: string; // ISO date string
-	updated_at: string; // ISO date string
-	notes?: string;
-	image?: string;
-	author?: User;
-	tags?: string[];
-	comments?: Comment[];
-	ingredients?: IngredientInRecipe[];
-	instructions?: string[];
-};
-
-export type AuthResponse = {
-	user: User;
-	access_token: string;
-	refresh_token: string;
-};
+export type Recipe = SnakeToCamelCase<components['schemas']['RecipeSchema']>;
+export type RecipeCreate = SnakeToCamelCase<components['schemas']['RecipeCreateSchema']>;
+export type RecipeDraft = SnakeToCamelCase<components['schemas']['DraftSchema']>;
+export type TokenRefreshResponse = components['schemas']['TokenRefreshResponseSchema'];
 
 export type ErrorResponse = {
 	message: string;
 	errors: Record<string, string[]>;
 };
 
-export enum RecipeVisibility {
-	Public = 'PUBLIC',
-	Friends = 'FRIENDS',
-	Private = 'PRIVATE'
-}
+export const RecipeVisibility = {
+	Public: 'PUBLIC',
+	Friends: 'FRIENDS',
+	Private: 'PRIVATE'
+} as const satisfies Record<string, components['schemas']['Visibility']>;
+
+export type RecipeVisibility = (typeof RecipeVisibility)[keyof typeof RecipeVisibility];

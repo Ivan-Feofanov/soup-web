@@ -1,7 +1,7 @@
 import { ImagesAPI } from '$lib/server/images';
 import { superValidate, type SuperValidated } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
-import type { Ingredient, Recipe, Unit, User } from '$lib/types';
+import type { Ingredient, Recipe, RecipeVisibility, Unit, User } from '$lib/types';
 import type { PageServerLoad } from './$types';
 import { type Actions, error, fail, redirect } from '@sveltejs/kit';
 import {
@@ -45,6 +45,7 @@ export const load: PageServerLoad = async ({ cookies, params, parent }): Promise
 			const draftFormData = {
 				...draft,
 				isDraft: true as const,
+				visibility: draft.visibility as RecipeVisibility,
 				ingredients:
 					draft.ingredients?.map((i) => ({
 						ingredient_uid: i.ingredient.uid,
@@ -76,6 +77,9 @@ export const load: PageServerLoad = async ({ cookies, params, parent }): Promise
 		const recipe = await kitchen.getRecipe(params.slug);
 		const recipeFormData = {
 			...recipe,
+			title: recipe.title!,
+			description: recipe.description!,
+			visibility: recipe.visibility as RecipeVisibility,
 			isDraft: false as const,
 			ingredients:
 				recipe.ingredients?.map((i) => ({

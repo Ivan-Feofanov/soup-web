@@ -6,7 +6,7 @@ const IngredientInRecipe = z
 		ingredient_uid: z.uuid(),
 		unit_uid: z.uuid().nullable().optional(),
 		quantity: z.number().nullable().optional(),
-		notes: z.string().optional()
+		notes: z.string().nullable().optional()
 	})
 	.refine(
 		(data) => {
@@ -63,7 +63,7 @@ export const recipeSchema = z.object({
 			message: 'At least one instruction is required'
 		}),
 	ingredients: z.array(IngredientInRecipe).min(1, 'At least one ingredient is required'),
-	image: z.string().optional(),
+	image: z.string().optional().nullable(),
 	newImage: z
 		.instanceof(File)
 		.refine((f) => f.size < 10_000_000, 'Max 10 MB upload size.')
@@ -74,19 +74,22 @@ export type RecipeSchema = z.infer<typeof recipeSchema>;
 export const recipeDraftSchema = z.object({
 	uid: z.string().readonly(),
 	isDraft: z.literal(true).readonly(),
-	title: z.string().transform((value) => value.trim()),
+	title: z
+		.string()
+		.transform((value) => value.trim())
+		.nullable(),
 	description: z
 		.string()
 		.transform((value) => value.trim())
 		.nullable()
 		.optional(),
-	notes: z.string().optional(),
+	notes: z.string().optional().nullable(),
 	instructions: z
 		.array(InstructionDraft)
 		.default([{ uid: new Date().getTime().toString(), step: 1, description: '' }])
 		.optional(),
 	ingredients: z.array(IngredientInRecipe).optional(),
-	image: z.string().optional(),
+	image: z.string().optional().nullable(),
 	visibility: z.enum(RecipeVisibility).default(RecipeVisibility.Private)
 });
 export type RecipeDraftSchema = z.infer<typeof recipeDraftSchema>;
@@ -104,7 +107,7 @@ export type UnitSchema = z.infer<typeof unitSchema>;
 
 export const userSchema = z.object({
 	uid: z.string(),
-	handler: z.string().min(1, 'Handler is required'),
-	username: z.string().min(1, 'Username is required'),
+	handler: z.string().min(1, 'Handler is required').nullable(),
+	username: z.string().min(1, 'Username is required').nullable(),
 	firstTime: z.coerce.boolean()
 });

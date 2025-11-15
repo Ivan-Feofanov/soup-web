@@ -1,7 +1,8 @@
 import type { Cookies } from '@sveltejs/kit';
-import type { AuthResponse } from '$lib/types';
+import type { TokenRefreshResponse } from '$lib/types';
 import { API_URL } from '$env/static/private';
-import { handleErrorResponse, HttpStatus } from '$lib/server/errors';
+import createClient, { type Client, type Middleware } from 'openapi-fetch';
+import type { paths } from '$lib/server/api';
 
 export type Fetch = typeof fetch;
 
@@ -18,20 +19,32 @@ export class ValidationError implements Error {
 }
 
 export class BaseAPI {
-	baseUrl: string = '';
-	apiUrl: string = `${API_URL}/api`;
+	baseUrl: string = `${API_URL}`;
 	protected readonly cookies: Cookies;
-	private readonly fetch: Fetch;
-	private headers: Record<string, string> = {
-		'Content-Type': 'application/json'
-	};
-	private maxRetries = 3;
+	protected client: Client<paths>;
 
 	constructor(cookies: Cookies, fetch: Fetch) {
 		this.cookies = cookies;
 		// Bind fetch to preserve context in Cloudflare Workers
-		this.fetch = fetch.bind(globalThis);
+		this.client = createClient({ baseUrl: this.baseUrl, fetch: fetch.bind(globalThis) });
+		this.client.use(this.authMiddleware);
 	}
+
+	private authMiddleware: Middleware = {
+		onRequest: async ({ request, schemaPath }) => {
+			const UNPROTECTED_ROUTES = ['/api/auth/login/', '/api/auth/token/refresh/'];
+			// Skip auth for certain paths
+			if (UNPROTECTED_ROUTES.some((pathname) => schemaPath.startsWith(pathname))) {
+				return undefined; // don’t modify request for certain paths
+			}
+			// Add Authorization header
+			const token = await this.getAccessToken();
+			if (token) {
+				request.headers.set('Authorization', `Bearer ${token}`);
+			}
+			return request;
+		}
+	};
 
 	/**
 	 * Get access token from cookie and refresh if needed
@@ -52,7 +65,7 @@ export class BaseAPI {
 	/**
 	 * Store tokens in cookies
 	 */
-	protected setTokens(data: AuthResponse) {
+	protected setTokens(data: TokenRefreshResponse) {
 		// Store JWT tokens in cookies
 		this.cookies.set('access_token', data.access_token, {
 			path: '/',
@@ -80,30 +93,6 @@ export class BaseAPI {
 	}
 
 	/**
-	 * Set Authorization header with access token
-	 */
-	private async setAuthHeader(headers: Record<string, string>) {
-		const token = await this.getAccessToken();
-		if (token) {
-			headers['Authorization'] = `Bearer ${token}`;
-		}
-	}
-
-	private async request(
-		method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
-		url: string,
-		body: Record<string, unknown> | null = null
-	): Promise<Response> {
-		const response = await this.requestWithAuth(method, `${this.baseUrl}${url}`, body);
-
-		if (!response.ok) {
-			await handleErrorResponse(response);
-		}
-
-		return response;
-	}
-
-	/**
 	 * Refresh the access token using the refresh token
 	 * This is called automatically when a request returns 401
 	 */
@@ -113,22 +102,16 @@ export class BaseAPI {
 			if (!refreshToken) {
 				return false;
 			}
-
-			const response = await this.fetch(`${this.apiUrl}/auth/token/refresh/`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({ refresh_token: refreshToken })
+			const { data, error } = await this.client.POST('/api/auth/token/refresh/', {
+				body: { refresh_token: refreshToken }
 			});
 
-			if (!response.ok) {
+			if (error) {
 				// Refresh token is invalid or expired
 				this.clearTokens();
 				return false;
 			}
 
-			const data: AuthResponse = await response.json();
 			this.setTokens(data);
 
 			return true;
@@ -142,65 +125,28 @@ export class BaseAPI {
 		// Check for access token
 		return !!this.cookies.get('access_token') || !!this.cookies.get('refresh_token');
 	}
+}
 
-	/**
-	 * Make an HTTP request with automatic token refresh on 401
-	 */
-	private async requestWithAuth(
-		method: string,
-		url: string,
-		body: Record<string, unknown> | null,
-		retryCount = 0
-	): Promise<Response> {
-		const headers = { ...this.headers };
-		await this.setAuthHeader(headers);
+/**
+ * Convert snake_case object keys to camelCase recursively
+ */
+export function snakeToCamel<T>(obj: unknown): T {
+	if (obj === null || obj === undefined) return obj as T;
 
-		const options: RequestInit = {
-			method,
-			headers
-		};
-
-		if (body) {
-			options.body = JSON.stringify(body);
-		}
-
-		const response = await this.fetch(url, options);
-
-		// If we get 401 or 403 and haven't retried yet, try to refresh the token
-		if (response.status === HttpStatus.UNAUTHORIZED || response.status === HttpStatus.FORBIDDEN) {
-			if (retryCount > this.maxRetries) {
-				console.error('Max retries reached, giving up');
-				await handleErrorResponse(response);
-			}
-			console.warn('Access token expired, refreshing token');
-			const refreshed = await this.refreshAccessToken();
-			if (refreshed) {
-				// Retry the request with the new token
-				console.log('Retrying request with new token');
-				return this.requestWithAuth(method, url, body, retryCount + 1);
-			}
-		}
-
-		if (!response.ok) {
-			await handleErrorResponse(response);
-		}
-
-		return response;
+	if (Array.isArray(obj)) {
+		return obj.map((item) => snakeToCamel(item)) as T;
 	}
 
-	async GET(url: string) {
-		return this.request('GET', url, null);
+	if (typeof obj === 'object' && obj.constructor === Object) {
+		return Object.keys(obj).reduce(
+			(acc, key) => {
+				const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+				acc[camelKey] = snakeToCamel((obj as Record<string, unknown>)[key]);
+				return acc;
+			},
+			{} as Record<string, unknown>
+		) as T;
 	}
 
-	async POST(url: string, body?: Record<string, unknown>) {
-		return this.request('POST', url, body);
-	}
-
-	async PATCH(url: string, body: Record<string, unknown>) {
-		return this.request('PATCH', url, body);
-	}
-
-	async DELETE(url: string) {
-		return this.request('DELETE', url, null);
-	}
+	return obj as T;
 }

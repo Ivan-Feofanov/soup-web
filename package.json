@@ -12,7 +12,7 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
-		"gen-types": "pnpx openapi-typescript $API_URL/api/openapi.json -o src/lib/server/api.d.ts"
+		"gen-types": "pnpx openapi-typescript $API_URL/api/openapi.json -H \"X-Ninja-Token: $OPENAPI_GENERATOR_TOKEN\" -o src/lib/server/api.d.ts --export-type"
 	},
 	"devDependencies": {
 		"@cloudflare/workers-types": "^4.20251014.0",

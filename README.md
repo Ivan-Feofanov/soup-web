@@ -1,38 +1,78 @@
-# sv
+# Soup Web
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A modern recipe management application built with SvelteKit, designed to help you organize and discover delicious recipes.
 
-## Creating a project
+## Features
 
-If you're seeing this, you've probably already done this step. Congrats!
+- **Recipe Management**: Create, edit, and view detailed recipes.
+- **Rich Media**: Upload and view recipe images, powered by Cloudinary.
+- **Tagging System**: Organize recipes with tags for easy filtering.
+- **Authentication**: Secure user accounts and session management.
+- **Responsive Design**: Beautiful UI built with TailwindCSS and Shadcn/Bits UI.
+- **Cloud Native**: Deployed on Cloudflare Workers for high performance and scalability.
 
-```sh
-# create a new project in the current directory
-npx sv create
+## Tech Stack
 
-# create a new project in my-app
-npx sv create my-app
-```
+- **Framework**: [SvelteKit](https://kit.svelte.dev/)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Styling**: [TailwindCSS](https://tailwindcss.com/)
+- **Components**: [Bits UI](https://www.bits-ui.com/) / [Lucide Icons](https://lucide.dev/)
+- **Forms**: [Superforms](https://superforms.rocks/) & [Zod](https://zod.dev/)
+- **Image CDN**: [Cloudinary](https://cloudinary.com/)
+- **Deployment**: [Cloudflare Workers](https://workers.cloudflare.com/)
 
-## Developing
+## Getting Started
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+### Prerequisites
 
-```sh
+- Node.js (Latest LTS recommended)
+- pnpm (recommended) or npm
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd soup-web
+   ```
+
+2. Install dependencies:
+   ```bash
+   pnpm install
+   ```
+
+3. Set up environment variables:
+   Create a `.env` file in the root directory. You may need to configure variables such as:
+   - `PUBLIC_CLOUDINARY_CLOUD_NAME`
+   - `API_URL` (required for API requests and type generation)
+
+### Development
+
+Start the development server:
+
+```bash
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+# or
+pnpm dev
 ```
 
-## Building
+Open [http://localhost:5173](http://localhost:5173) to view the app.
 
-To create a production version of your app:
+## Scripts
 
-```sh
+- `npm run dev`: Start the development server.
+- `npm run build`: Build the application for production.
+- `npm run preview`: Preview the production build locally.
+- `npm run check`: Run SvelteKit sync and check.
+- `npm run lint`: Run Prettier and ESLint.
+- `npm run gen-types`: Generate TypeScript types from the OpenAPI spec.
+
+## Deployment
+
+This project is configured for deployment on Cloudflare Workers.
+
+```bash
 npm run build
 ```
 
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+Ensure you have the Cloudflare Wrangler CLI installed and authenticated to deploy.

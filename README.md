@@ -51,8 +51,6 @@ A modern recipe management application built with SvelteKit, designed to help yo
 Start the development server:
 
 ```bash
-npm run dev
-# or
 pnpm dev
 ```
 
@@ -60,19 +58,19 @@ Open [http://localhost:5173](http://localhost:5173) to view the app.
 
 ## Scripts
 
-- `npm run dev`: Start the development server.
-- `npm run build`: Build the application for production.
-- `npm run preview`: Preview the production build locally.
-- `npm run check`: Run SvelteKit sync and check.
-- `npm run lint`: Run Prettier and ESLint.
-- `npm run gen-types`: Generate TypeScript types from the OpenAPI spec.
+- `pnpm dev`: Start the development server.
+- `pnpm build`: Build the application for production.
+- `pnpm preview`: Preview the production build locally.
+- `pnpm check`: Run SvelteKit sync and check.
+- `pnpm lint`: Run Prettier and ESLint.
+- `pnpm gen-types`: Generate TypeScript types from the OpenAPI spec.
 
 ## Deployment
 
 This project is configured for deployment on Cloudflare Workers.
 
 ```bash
-npm run build
+pnpm build
 ```
 
 Ensure you have the Cloudflare Wrangler CLI installed and authenticated to deploy.

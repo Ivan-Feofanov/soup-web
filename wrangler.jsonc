@@ -20,14 +20,14 @@
 	},
 	"dev": {
 		"port": 5173
-	},
-	"r2_buckets": [
-		{
-			"bucket_name": "soup",
-			"binding": "IMAGES",
-			"remote": true
-		}
-	],
+	}
+//	"r2_buckets": [
+//		{
+//			"bucket_name": "bucket",
+//			"binding": "MYBUCKET",
+//			"remote": true
+//		}
+//	],
 	/**
    * Smart Placement
    * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
@@ -43,9 +43,9 @@
    * Environment Variables
    * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
    */
-   "vars": {
-     "PUBLIC_CLOUDINARY_CLOUD_NAME": "doqw13qop"
-   }
+//   "vars": {
+//     "PUBLIC_CLOUDINARY_CLOUD_NAME": "CLOUDINARY_CLOUD_NAME"
+//   }
 	/**
    * Note: Use secrets to store sensitive data.
    * https://developers.cloudflare.com/workers/configuration/secrets/
